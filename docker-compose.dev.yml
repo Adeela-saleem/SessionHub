@@ -6,6 +6,8 @@ services:
       target: development
     environment:
       NODE_ENV: development
+      # The Vite dev server runs on 5173, not the nginx port the base file allows.
+      CORS_ORIGIN: http://localhost:5173,http://localhost:8080
     volumes:
       - ./apps/api/src:/app/apps/api/src
       - ./apps/api/prisma:/app/apps/api/prisma

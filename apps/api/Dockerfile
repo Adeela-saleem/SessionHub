@@ -11,6 +11,8 @@ RUN npm install --prefix apps/api --no-audit --no-fund
 
 # ── build ────────────────────────────────────────────────────
 FROM node:22-alpine AS build
+# Prisma engines need libssl at runtime; node:22-alpine no longer ships it.
+RUN apk add --no-cache openssl
 WORKDIR /app
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY apps/api ./apps/api
@@ -19,6 +21,8 @@ RUN npx prisma generate && npm run build
 
 # ── development ──────────────────────────────────────────────
 FROM node:22-alpine AS development
+# Prisma engines need libssl at runtime; node:22-alpine no longer ships it.
+RUN apk add --no-cache openssl
 WORKDIR /app/apps/api
 ENV NODE_ENV=development
 COPY --from=deps /app/apps/api/node_modules ./node_modules
@@ -29,6 +33,8 @@ CMD ["npm", "run", "start:dev"]
 
 # ── production ───────────────────────────────────────────────
 FROM node:22-alpine AS production
+# Prisma engines need libssl at runtime; node:22-alpine no longer ships it.
+RUN apk add --no-cache openssl
 WORKDIR /app/apps/api
 ENV NODE_ENV=production
 RUN addgroup -S app && adduser -S app -G app
