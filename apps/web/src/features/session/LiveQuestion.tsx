@@ -10,9 +10,16 @@ import { IconCheck, IconClock } from '../../components/icons';
    `PublicQuestion` has no such field, and results only arrive
    on `question:closed`, after the server has closed it.
    ============================================================ */
-export function LiveQuestion({ question, results, onAnswered }: {
+export function LiveQuestion({ question, results, myAnswer, onRecord, onAnswered }: {
   question: PublicQuestion | null;
   results: QuestionResults | null;
+  /**
+   * What this student submitted for the question the results describe.
+   * Held by the caller (the session context) because local state here is
+   * reset when the question changes — which happens before results arrive.
+   */
+  myAnswer?: number | string | null;
+  onRecord?: (questionId: string, value: number | string) => void;
   onAnswered?: () => void;
 }) {
   const [choice, setChoice] = useState<number | null>(null);
@@ -53,6 +60,7 @@ export function LiveQuestion({ question, results, onAnswered }: {
         question.type === 'MCQ' ? { answerIndex: choice } : { answerText: text },
       );
       setSubmitted(true);
+      onRecord?.(question.id, question.type === 'MCQ' ? (choice as number) : text.trim());
       onAnswered?.();
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
@@ -69,10 +77,52 @@ export function LiveQuestion({ question, results, onAnswered }: {
   /* ── Reveal ─────────────────────────────────────────── */
   if (results) {
     const total = results.totalAnswers || 1;
+    // A short-answer question has no options, so a distribution list
+    // would render empty. It gets its own reveal instead.
+    const isShort = results.distribution.length === 0;
+    // The context remembers what was submitted; local `choice` was reset
+    // when the question closed, so it only serves as a fallback.
+    const mineIndex = typeof myAnswer === 'number' ? myAnswer : choice;
+    const mineText = typeof myAnswer === 'string' ? myAnswer : null;
+
+    if (isShort) {
+      return (
+        <div className="lq" aria-live="polite">
+          <div className="lq-head">
+            <span className="lq-kicker">Result</span>
+            <Badge tone="neutral">{results.totalAnswers} answered</Badge>
+          </div>
+          <p className="lq-prompt">{results.prompt}</p>
+
+          {mineText ? (
+            <div className="lq-short-mine">
+              <span className="t-label">Your answer</span>
+              <p>{mineText}</p>
+            </div>
+          ) : (
+            <p className="lq-short-none">
+              You did not submit an answer before this question closed.
+            </p>
+          )}
+
+          {results.explanation ? (
+            <div className="lq-explain">
+              <span className="t-label">What your teacher was looking for</span>
+              <p>{results.explanation}</p>
+            </div>
+          ) : (
+            <p className="lq-short-none">
+              Written answers are marked by your teacher, so there is no automatic verdict here.
+            </p>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="lq" aria-live="polite">
         <div className="lq-head">
-          <span className="t-label">Results</span>
+          <span className="lq-kicker">Result</span>
           <Badge tone="neutral">{results.correctCount} of {results.totalAnswers} correct</Badge>
         </div>
         <p className="lq-prompt">{results.prompt}</p>
@@ -80,13 +130,15 @@ export function LiveQuestion({ question, results, onAnswered }: {
         <ul className="lq-results">
           {results.distribution.map((d) => {
             const isCorrect = d.index === results.correctIndex;
-            const mine = d.index === choice;
+            const mine = d.index === mineIndex;
             return (
               <li key={d.index} className={isCorrect ? 'is-correct' : mine ? 'is-mine' : ''}>
                 <span className="lq-key">{String.fromCharCode(65 + d.index)}</span>
                 <span className="lq-opt-label">
                   {d.label}
-                  {isCorrect && <span className="lq-mark"><IconCheck size={13} />Correct</span>}
+                  {isCorrect && (
+                    <span className="lq-mark"><IconCheck size={13} />{mine ? 'Correct — your answer' : 'Correct'}</span>
+                  )}
                   {mine && !isCorrect && <span className="lq-mark lq-mark-mine">Your answer</span>}
                 </span>
                 <span className="lq-bar"><i style={{ width: `${(d.count / total) * 100}%` }} /></span>
@@ -110,9 +162,9 @@ export function LiveQuestion({ question, results, onAnswered }: {
   if (!question) {
     return (
       <EmptyState
-        icon={<IconClock size={20} />}
+        icon={<IconClock size={18} />}
         title="Waiting for the next question"
-        description="Your teacher hasn't opened one yet. Keep this page open — the question will appear here the moment it goes live."
+        description="Your teacher hasn't opened one yet. Keep this page open — it appears here the moment it goes live."
       />
     );
   }
@@ -123,7 +175,7 @@ export function LiveQuestion({ question, results, onAnswered }: {
   return (
     <div className="lq" aria-live="polite">
       <div className="lq-head">
-        <span className="t-label">Question {question.order} · {question.marks} {question.marks === 1 ? 'mark' : 'marks'}</span>
+        <span className="lq-kicker">Question {question.order}<span className="t-muted"> · {question.marks} {question.marks === 1 ? 'mark' : 'marks'}</span></span>
         {remaining !== null && (
           <span className={`lq-timer ${urgent ? 'is-urgent' : ''}`.trim()}>
             <IconClock size={14} />{Math.max(0, remaining)}s
@@ -181,9 +233,14 @@ export function LiveQuestion({ question, results, onAnswered }: {
           Waiting for your teacher to close the question and reveal the result.
         </Banner>
       ) : (
-        <Button block size="lg" loading={busy} disabled={expired || !canSubmit} onClick={submit}>
-          {expired ? 'Time is up' : 'Submit answer'}
-        </Button>
+        <div className="lq-actions">
+          <span className="t-caption t-muted">
+            {question.type === 'MCQ' ? 'Choose one option, then submit.' : 'Write your answer, then submit.'}
+          </span>
+          <Button size="lg" loading={busy} disabled={expired || !canSubmit} onClick={submit}>
+            {expired ? 'Time is up' : 'Submit answer'}
+          </Button>
+        </div>
       )}
     </div>
   );

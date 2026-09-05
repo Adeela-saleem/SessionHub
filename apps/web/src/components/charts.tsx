@@ -14,33 +14,75 @@ import { Card, CardBody, CardHead } from './ui';
    faster than a number could.
    ============================================================ */
 
-const AXIS = { fontSize: 11, fill: 'var(--chart-axis)' } as const;
+const AXIS = { fontSize: 11, fill: 'var(--chart-axis)', fontFamily: 'inherit' } as const;
 const GRID = 'var(--chart-grid)';
 
 export const SERIES = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
 
-export function ChartCard({ title, sub, action, height = 260, className = '', legend, children }: {
+export type LegendItem = { name: string; color: string; value?: string | number };
+
+export function ChartCard({ title, sub, action, height = 220, className = '', legend, children }: {
   title: string; sub?: string; action?: ReactNode; height?: number;
-  className?: string; legend?: { name: string; color: string }[]; children: ReactNode;
+  className?: string; legend?: LegendItem[]; children: ReactNode;
 }) {
+  // A one-item legend only restates the title, so it is dropped —
+  // unless it carries values, in which case it is doing real work.
+  const legendItems =
+    legend && (legend.length > 1 || legend.some((l) => l.value !== undefined)) ? legend : null;
   return (
     <Card className={className}>
       <CardHead title={title} sub={sub} action={action} />
       <CardBody>
         <div className="chart-body" style={{ height }}>
-          <ResponsiveContainer width="100%" height="100%">
+          {/* initialDimension keeps the first paint from being 0-sized
+              inside containers that report late (tabs, fresh grids). */}
+          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 600, height }}>
             {children as never}
           </ResponsiveContainer>
         </div>
-        {legend && (
+        {legendItems && (
           <div className="chart-legend">
-            {legend.map((l) => (
-              <span key={l.name}><i style={{ background: l.color }} />{l.name}</span>
+            {legendItems.map((l) => (
+              <span key={l.name}>
+                <i style={{ background: l.color }} />{l.name}
+                {l.value !== undefined && (
+                  <strong className="t-num" style={{ marginLeft: 5, fontWeight: 600 }}>{l.value}</strong>
+                )}
+              </span>
             ))}
           </div>
         )}
       </CardBody>
     </Card>
+  );
+}
+
+/** A chart on the page — no card. Used under a section title. */
+export function ChartFrame({ height = 260, legend, children, className = '' }: {
+  height?: number; legend?: LegendItem[]; children: ReactNode; className?: string;
+}) {
+  const legendItems =
+    legend && (legend.length > 1 || legend.some((l) => l.value !== undefined)) ? legend : null;
+  return (
+    <div className={`chart-frame ${className}`.trim()}>
+      <div className="chart-body" style={{ height }}>
+        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 600, height }}>
+          {children as never}
+        </ResponsiveContainer>
+      </div>
+      {legendItems && (
+        <div className="chart-legend">
+          {legendItems.map((l) => (
+            <span key={l.name}>
+              <i style={{ background: l.color }} />{l.name}
+              {l.value !== undefined && (
+                <strong className="t-num" style={{ marginLeft: 5, fontWeight: 600 }}>{l.value}</strong>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -65,63 +107,84 @@ export function EmptyChart({ label }: { label: string }) {
   return <div className="chart-empty">{label}</div>;
 }
 
-type Series = { key: string; name: string; color?: string };
+type Series = { key: string; name: string; color?: string; axis?: 'left' | 'right' };
 
-export function TrendArea({ data, x, series, unit = '' }: {
-  data: any[]; x: string; series: Series[]; unit?: string;
+/**
+ * True when rows exist but no series holds a single plottable value —
+ * the case that would otherwise render bare axes around nothing.
+ * A zero is a value; only null/undefined count as missing.
+ */
+function allSeriesEmpty(data: any[], keys: string[]): boolean {
+  return data.length > 0 && data.every((row) => keys.every((k) => row?.[k] == null));
+}
+
+export function TrendArea({ data, x, series, unit = '', emptyLabel = 'No data recorded yet' }: {
+  data: any[]; x: string; series: Series[]; unit?: string; emptyLabel?: string;
 }) {
+  if (allSeriesEmpty(data, series.map((s) => s.key))) return <EmptyChart label={emptyLabel} />;
   return (
     <AreaChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
       <defs>
         {series.map((s, i) => (
           <linearGradient key={s.key} id={`fill-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={s.color ?? SERIES[i % SERIES.length]} stopOpacity={0.22} />
-            <stop offset="100%" stopColor={s.color ?? SERIES[i % SERIES.length]} stopOpacity={0.01} />
+            <stop offset="0%" stopColor={s.color ?? SERIES[i % SERIES.length]} stopOpacity={0.28} />
+            <stop offset="100%" stopColor={s.color ?? SERIES[i % SERIES.length]} stopOpacity={0.02} />
           </linearGradient>
         ))}
       </defs>
       <CartesianGrid stroke={GRID} vertical={false} />
       <XAxis dataKey={x} tick={AXIS} tickLine={false} axisLine={{ stroke: GRID }} tickMargin={8} />
-      <YAxis tick={AXIS} tickLine={false} axisLine={false} width={44} />
+      <YAxis tick={AXIS} tickLine={false} axisLine={false} width={44} allowDecimals={false} />
       <Tooltip content={<ChartTooltip unit={unit} />} cursor={{ stroke: GRID }} />
       {series.map((s, i) => (
         <Area
           key={s.key} type="monotone" dataKey={s.key} name={s.name}
-          stroke={s.color ?? SERIES[i % SERIES.length]} strokeWidth={2}
-          fill={`url(#fill-${s.key})`} dot={false} activeDot={{ r: 4, strokeWidth: 0 }}
-          animationDuration={320}
+          stroke={s.color ?? SERIES[i % SERIES.length]} strokeWidth={2.25}
+          fill={`url(#fill-${s.key})`}
+          dot={data.length <= 24 ? { r: 3, strokeWidth: 2, stroke: 'var(--surface)', fill: s.color ?? SERIES[i % SERIES.length] } : false}
+          activeDot={{ r: 5, strokeWidth: 2, stroke: 'var(--surface)' }}
+          isAnimationActive={false}
         />
       ))}
     </AreaChart>
   );
 }
 
-export function TrendLine({ data, x, series, unit = '' }: {
-  data: any[]; x: string; series: Series[]; unit?: string;
+export function TrendLine({ data, x, series, unit = '', emptyLabel = 'No data recorded yet' }: {
+  data: any[]; x: string; series: Series[]; unit?: string; emptyLabel?: string;
 }) {
+  if (allSeriesEmpty(data, series.map((s) => s.key))) return <EmptyChart label={emptyLabel} />;
+  const hasRight = series.some((s) => s.axis === 'right');
   return (
-    <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+    <LineChart data={data} margin={{ top: 8, right: hasRight ? -14 : 8, left: -20, bottom: 0 }}>
       <CartesianGrid stroke={GRID} vertical={false} />
       <XAxis dataKey={x} tick={AXIS} tickLine={false} axisLine={{ stroke: GRID }} tickMargin={8} />
-      <YAxis tick={AXIS} tickLine={false} axisLine={false} width={44} />
+      <YAxis yAxisId="left" tick={AXIS} tickLine={false} axisLine={false} width={44} allowDecimals={false} />
+      {hasRight && (
+        <YAxis yAxisId="right" orientation="right" tick={AXIS} tickLine={false} axisLine={false} width={44} />
+      )}
       <Tooltip content={<ChartTooltip unit={unit} />} cursor={{ stroke: GRID }} />
       {series.map((s, i) => (
         <Line
           key={s.key} type="monotone" dataKey={s.key} name={s.name}
-          stroke={s.color ?? SERIES[i % SERIES.length]} strokeWidth={2}
-          dot={false} activeDot={{ r: 4, strokeWidth: 0 }}
-          animationDuration={320}
+          yAxisId={s.axis === 'right' ? 'right' : 'left'}
+          stroke={s.color ?? SERIES[i % SERIES.length]} strokeWidth={2.25}
+          dot={data.length <= 24 ? { r: 3, strokeWidth: 2, stroke: 'var(--surface)', fill: s.color ?? SERIES[i % SERIES.length] } : false}
+          activeDot={{ r: 5, strokeWidth: 2, stroke: 'var(--surface)' }}
+          isAnimationActive={false}
         />
       ))}
     </LineChart>
   );
 }
 
-export function Bars({ data, x, series, unit = '', horizontal = false, colorBy }: {
+export function Bars({ data, x, series, unit = '', horizontal = false, colorBy, emptyLabel = 'No data recorded yet' }: {
   data: any[]; x: string; series: Series[]; unit?: string; horizontal?: boolean;
   /** Colours each bar from its own value — used for question difficulty. */
   colorBy?: (row: any) => string;
+  emptyLabel?: string;
 }) {
+  if (allSeriesEmpty(data, series.map((s) => s.key))) return <EmptyChart label={emptyLabel} />;
   return (
     <BarChart
       data={data}
@@ -132,13 +195,13 @@ export function Bars({ data, x, series, unit = '', horizontal = false, colorBy }
       <CartesianGrid stroke={GRID} vertical={horizontal} horizontal={!horizontal} />
       {horizontal ? (
         <>
-          <XAxis type="number" tick={AXIS} tickLine={false} axisLine={false} />
+          <XAxis type="number" tick={AXIS} tickLine={false} axisLine={false} allowDecimals={false} />
           <YAxis type="category" dataKey={x} tick={AXIS} tickLine={false} axisLine={false} width={70} />
         </>
       ) : (
         <>
           <XAxis dataKey={x} tick={AXIS} tickLine={false} axisLine={{ stroke: GRID }} tickMargin={8} />
-          <YAxis tick={AXIS} tickLine={false} axisLine={false} width={44} />
+          <YAxis tick={AXIS} tickLine={false} axisLine={false} width={44} allowDecimals={false} />
         </>
       )}
       <Tooltip content={<ChartTooltip unit={unit} />} cursor={{ fill: 'var(--surface-2)' }} />
@@ -146,8 +209,9 @@ export function Bars({ data, x, series, unit = '', horizontal = false, colorBy }
         <Bar
           key={s.key} dataKey={s.key} name={s.name}
           radius={horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]}
+          maxBarSize={32}
           fill={s.color ?? SERIES[i % SERIES.length]}
-          animationDuration={320}
+          isAnimationActive={false}
         >
           {colorBy && data.map((row, idx) => <Cell key={idx} fill={colorBy(row)} />)}
         </Bar>
@@ -156,9 +220,11 @@ export function Bars({ data, x, series, unit = '', horizontal = false, colorBy }
   );
 }
 
-export function Donut({ data, colors = SERIES, unit = '' }: {
-  data: { name: string; value: number }[]; colors?: string[]; unit?: string;
+export function Donut({ data, colors = SERIES, unit = '', emptyLabel = 'No data recorded yet' }: {
+  data: { name: string; value: number }[]; colors?: string[]; unit?: string; emptyLabel?: string;
 }) {
+  // All-zero slices draw nothing; say so instead of showing a blank ring.
+  if (!data.length || data.every((d) => !d.value)) return <EmptyChart label={emptyLabel} />;
   return (
     <PieChart>
       <Tooltip content={<ChartTooltip unit={unit} />} />
@@ -166,7 +232,7 @@ export function Donut({ data, colors = SERIES, unit = '' }: {
         data={data} dataKey="value" nameKey="name"
         innerRadius="62%" outerRadius="86%" paddingAngle={2}
         stroke="var(--surface)" strokeWidth={2}
-        animationDuration={320}
+        isAnimationActive={false}
       >
         {data.map((_, i) => <Cell key={i} fill={colors[i % colors.length]} />)}
       </Pie>
@@ -175,6 +241,14 @@ export function Donut({ data, colors = SERIES, unit = '' }: {
 }
 
 /** Legend rendered as markup, not by Recharts, so it uses our type scale. */
-export function legendFor(series: Series[]) {
+export function legendFor(series: Series[]): LegendItem[] {
   return series.map((s, i) => ({ name: s.name, color: s.color ?? SERIES[i % SERIES.length] }));
+}
+
+/**
+ * Donut legend built from the actual slices, values included, so each
+ * segment is identifiable without hovering it.
+ */
+export function donutLegend(data: { name: string; value: number }[], colors = SERIES): LegendItem[] {
+  return data.map((d, i) => ({ name: d.name, color: colors[i % colors.length], value: d.value }));
 }

@@ -2,10 +2,15 @@ import { createContext, Suspense, useCallback, useContext, useEffect, useMemo, u
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../lib/auth';
 import type { Role } from '../../lib/types';
-import { ICONS, IconChevronDown, IconLogout, IconMenu, IconSettings } from '../icons';
-import { Avatar, Badge, Breadcrumbs, IconButton, Menu, MenuItem, MenuSep, Skeleton } from '../ui';
+import {
+  ICONS, IconChevronDown, IconChevronLeft, IconChevronRight, IconLogout, IconMenu, IconSearch, IconSettings,
+} from '../icons';
+import { applySidebar, storedSidebar, type Sidebar } from '../../lib/theme';
+import { Avatar, Breadcrumbs, IconButton, Menu, MenuItem, MenuSep, Skeleton } from '../ui';
 import { ThemeToggle } from '../ThemeToggle';
-import { MOBILE_NAV, NAV, ROLE_LABEL, type NavItem } from './nav';
+import { CommandPalette } from './CommandPalette';
+import { NotificationsBell } from './NotificationsBell';
+import { allNavItems, MOBILE_NAV, NAV, ROLE_LABEL, type NavItem } from './nav';
 
 /* ============================================================
    Shell context
@@ -27,6 +32,11 @@ export function usePageDetail(label: string | null | undefined) {
   }, [label, setDetail]);
 }
 
+function isTypingTarget(t: EventTarget | null) {
+  const el = t as HTMLElement | null;
+  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+}
+
 export function AppShell({ role, counts = {} }: {
   role: Role;
   /** Badge values keyed by NavItem.badge — e.g. { pending: 3, live: 1 } */
@@ -35,7 +45,42 @@ export function AppShell({ role, counts = {} }: {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [mobileNav, setMobileNav] = useState(false);
+  const [palette, setPalette] = useState(false);
   const [detail, setDetailState] = useState<string | null>(null);
+
+  // Sidebar width. Null means automatic (the 1180px breakpoint decides);
+  // a stored choice holds at every width. The effective state drives the
+  // toggle's icon and the tooltips on icon-only links.
+  const [sidebar, setSidebar] = useState<Sidebar | null>(() => storedSidebar());
+  const [narrow, setNarrow] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 1180px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1180px)');
+    const onChange = (e: MediaQueryListEvent) => setNarrow(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  const collapsed = sidebar ? sidebar === 'collapsed' : narrow;
+  const toggleSidebar = () => {
+    const next: Sidebar = collapsed ? 'expanded' : 'collapsed';
+    applySidebar(next);
+    setSidebar(next);
+  };
+
+  // ⌘K / Ctrl+K from anywhere; "/" when not typing.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPalette((p) => !p);
+      } else if (e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey && !isTypingTarget(e.target)) {
+        e.preventDefault();
+        setPalette(true);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   const setDetail = useCallback((label: string | null) => setDetailState(label), []);
   const value = useMemo(() => ({ setDetail, counts }), [setDetail, counts]);
@@ -45,16 +90,18 @@ export function AppShell({ role, counts = {} }: {
   useEffect(() => { setMobileNav(false); }, [location.pathname]);
 
   const groups = NAV[role];
-  const flat = groups.flatMap((g) => g.items);
+  const flat = allNavItems(role);
+  const home = flat[0]!;
   const current = [...flat]
     .sort((a, b) => b.to.length - a.to.length)
     .find((i) => (i.end ? location.pathname === i.to : location.pathname.startsWith(i.to)));
 
+  // Location, not history: section, then the record inside it.
   const crumbs = [
-    { label: 'SessionHub', to: flat[0]!.to },
-    ...(current ? [{ label: current.label, to: current.to }] : []),
+    ...(current ? [{ label: current.label, to: current.to }] : [{ label: ROLE_LABEL[role], to: home.to }]),
     ...(detail ? [{ label: detail }] : []),
   ];
+  const liveTo = `/${role.toLowerCase()}/live`;
 
   return (
     <ShellCtx.Provider value={value}>
@@ -66,25 +113,44 @@ export function AppShell({ role, counts = {} }: {
         )}
 
         <aside className="sidebar" aria-label="Primary">
-          <div className="sidebar-brand">
+          <Link to={home.to} className="sidebar-brand" aria-label="SessionHub home">
             <span className="brand-mark" aria-hidden="true">S</span>
             <span className="brand-word">SessionHub</span>
+          </Link>
+
+          {/* Workspace context: who you are here, and where. */}
+          <div className="sidebar-context" aria-label="Workspace">
+            <Avatar name={user?.name} size="sm" />
+            <span className="sidebar-context-id">
+              <span className="sidebar-context-name t-clamp-1">{user?.department || ROLE_LABEL[role]}</span>
+              <span className="sidebar-context-role t-clamp-1">{user?.department ? ROLE_LABEL[role] : user?.email}</span>
+            </span>
           </div>
 
           <div className="sidebar-scroll">
-            {groups.map((group) => (
-              <nav className="nav-group" key={group.label} aria-label={group.label}>
-                <div className="nav-group-label">{group.label}</div>
+            {groups.map((group, gi) => (
+              <nav className="nav-group" key={group.label ?? gi} aria-label={group.label ?? 'Main'}>
+                {group.label && <div className="nav-group-label">{group.label}</div>}
                 {group.items.map((item) => (
-                  <SidebarLink key={item.to} item={item} count={counts[item.badge ?? '']} />
+                  <SidebarLink key={item.to} item={item} count={counts[item.badge ?? '']} collapsed={collapsed} />
                 ))}
               </nav>
             ))}
           </div>
 
           <div className="sidebar-foot">
-            {/* The trigger is the row itself, so the whole strip is the
-                hit target rather than a 34px square in the corner. */}
+            {/* Settings lives in the account menu below; it is not repeated here. */}
+            <button
+              type="button"
+              className="nav-item sidebar-collapse"
+              onClick={toggleSidebar}
+              aria-pressed={collapsed}
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {collapsed ? <IconChevronRight size={16} /> : <IconChevronLeft size={16} />}
+              <span>Collapse</span>
+            </button>
             <Menu
               align="left"
               label={`Account menu for ${user?.name ?? 'your account'}`}
@@ -94,17 +160,17 @@ export function AppShell({ role, counts = {} }: {
                   <Avatar name={user?.name} size="sm" />
                   <span className="sidebar-user-id grow">
                     <span className="sidebar-user-name t-clamp-1">{user?.name}</span>
-                    <span className="sidebar-user-role">{ROLE_LABEL[role]}</span>
+                    <span className="sidebar-user-role t-clamp-1">{user?.email}</span>
                   </span>
                   <IconChevronDown size={14} className="sidebar-user-id sidebar-user-caret" />
                 </>
               }
             >
               <div className="menu-head">
-                <div className="t-sm" style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.name}</div>
-                <div className="t-caption t-muted">{user?.email}</div>
+                <div className="t-sm" style={{ fontWeight: 500, color: 'var(--text)' }}>{user?.name}</div>
+                <div className="t-caption t-muted">{ROLE_LABEL[role]}</div>
               </div>
-              <Link to={`${flat[0]!.to}/settings`} className="menu-item" role="menuitem">
+              <Link to={`${home.to}/settings`} className="menu-item" role="menuitem">
                 <IconSettings size={15} />Settings
               </Link>
               <MenuSep />
@@ -130,10 +196,21 @@ export function AppShell({ role, counts = {} }: {
             <span className="grow" />
 
             {counts.live ? (
-              <NavLink to={`/${role.toLowerCase()}/live`} className="hide-sm">
-                <Badge tone="live">Session live</Badge>
+              <NavLink to={liveTo} className="topbar-live hide-sm" aria-label="A session is live — open it">
+                <i aria-hidden="true" />Live
               </NavLink>
             ) : null}
+            <button
+              type="button"
+              className="topbar-find"
+              onClick={() => setPalette(true)}
+              aria-label="Search (Ctrl+K)"
+            >
+              <IconSearch size={15} />
+              <span>Search</span>
+              <kbd className="cmdk-kbd">⌘K</kbd>
+            </button>
+            <NotificationsBell />
             <ThemeToggle />
           </header>
 
@@ -146,6 +223,8 @@ export function AppShell({ role, counts = {} }: {
           </main>
         </div>
 
+        <CommandPalette role={role} open={palette} onClose={() => setPalette(false)} />
+
         <nav className="tabbar" aria-label="Primary">
           {MOBILE_NAV[role].map((item) => {
             const Ico = ICONS[item.icon];
@@ -156,7 +235,7 @@ export function AppShell({ role, counts = {} }: {
                 end={item.end}
                 className={({ isActive }) => `tabbar-item ${isActive ? 'is-active' : ''}`}
               >
-                <Ico size={19} />
+                <Ico size={20} />
                 <span>{item.label}</span>
               </NavLink>
             );
@@ -167,15 +246,18 @@ export function AppShell({ role, counts = {} }: {
   );
 }
 
-function SidebarLink({ item, count }: { item: NavItem; count?: number }) {
+function SidebarLink({ item, count, collapsed }: { item: NavItem; count?: number; collapsed?: boolean }) {
   const Ico = ICONS[item.icon];
+  // Icon-only links need the label somewhere: the native tooltip.
+  const title = collapsed ? (count ? `${item.label} (${count})` : item.label) : undefined;
   return (
     <NavLink
       to={item.to}
       end={item.end}
+      title={title}
       className={({ isActive }) => `nav-item ${isActive ? 'is-active' : ''}`}
     >
-      <Ico size={17} />
+      <Ico size={16} />
       <span>{item.label}</span>
       {count ? (
         <span className={`nav-count ${item.badge === 'live' ? '' : 'nav-count-quiet'}`.trim()}>
@@ -190,9 +272,9 @@ function SidebarLink({ item, count }: { item: NavItem; count?: number }) {
 function PageSkeleton() {
   return (
     <div className="col" aria-hidden="true">
-      <Skeleton h={28} w="32%" />
-      <Skeleton h={88} className="sk-block" />
-      <Skeleton h={300} className="sk-block" />
+      <Skeleton h={22} w="28%" />
+      <Skeleton h={64} className="sk-block" />
+      <Skeleton h={280} className="sk-block" />
     </div>
   );
 }

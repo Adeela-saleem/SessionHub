@@ -40,10 +40,10 @@ export function PageHeader({ eyebrow, title, lede, actions }: {
   );
 }
 
-export function SectionHead({ title, action }: { title: ReactNode; action?: ReactNode }) {
+export function SectionHead({ title, sub, action }: { title: ReactNode; sub?: ReactNode; action?: ReactNode }) {
   return (
     <div className="section-head">
-      <h2 className="section-title">{title}</h2>
+      <h2 className="section-title">{title}{sub && <span className="section-sub">{sub}</span>}</h2>
       {action}
     </div>
   );

@@ -1,0 +1,37 @@
+/* ============================================================
+   SessionHub — admin page compositions
+   Screen-specific layout only. Shared patterns belong in
+   components.css / base.css.
+   ============================================================ */
+
+/* A table in a bordered frame: the toolbar, bulk bar, rows and
+   pagination all live inside the same hairline. No title above
+   it — the page header already said what the table is. */
+
+/* Course facts on one line under the course title. */
+.course-facts-line {
+  display: inline-flex; align-items: center; flex-wrap: wrap;
+  gap: 0 var(--s-2);
+  color: var(--text-secondary);
+}
+.course-facts-line > * + *::before {
+  content: '·';
+  margin-right: var(--s-2);
+  color: var(--border-strong);
+}
+.course-facts-line .badge::before { content: none; }
+
+/* The shared .cell-user rule flattens every inner span to block,
+   which breaks the avatar's grid centring. Restore it here. */
+.cell-user .avatar { display: grid; }
+
+/* Audit log cells. */
+.cell-actor { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
+.audit-cell-summary { display: block; color: var(--text); line-height: 1.4; white-space: normal; }
+table.data td .cell-sub { display: block; }
+.audit-stamp { white-space: nowrap; }
+
+/* 404 */
+.notfound { display: flex; flex-direction: column; align-items: center; }
+.notfound-code { font-size: var(--fs-body); letter-spacing: 0.1em; color: var(--text-muted); }
+.notfound .empty { padding-top: var(--s-2); }

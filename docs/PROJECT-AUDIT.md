@@ -1,3 +1,13 @@
+> **⚠️ Superseded — this document describes `legacy/`.**
+>
+> It audits the original vanilla-JS + Firebase prototype. The application
+> has since migrated to NestJS + Prisma + PostgreSQL (`apps/api`) and
+> React + Vite (`apps/web`); `grep -rl firebase apps/` returns nothing.
+> `legacy/` is orphaned — nothing imports or serves it.
+>
+> For current state see `PRODUCT_ROADMAP.md` and
+> `IMPLEMENTATION_STATUS.md`. Kept for historical reference.
+
 # SessionHub — Project Audit
 
 ## 1. Snapshot
@@ -15,33 +25,6 @@
 ## 2. Stack & Dependencies
 
 | Layer | Choice |
-|-------|--------|
-| **Framework** | Vanilla JavaScript (ES modules), no build step required |
-| **Language** | JavaScript (browser + Node.js via Cloud Functions) |
-| **Database** | Firestore (NoSQL) |
-| **Auth** | Firebase Authentication (Email/Password) |
-| **Realtime** | Firestore `onSnapshot` listeners (not WebSockets/Socket.io) |
-| **Styling** | Plain CSS with design tokens |
-| **Charts** | Chart.js 4.4.4 (imported from CDN) |
-| **AI Backend** | Groq API (free tier) via Cloud Functions |
-| **Hosting** | Static files + Firebase Hosting + Cloud Functions |
-
-### Functions Package.json (Node 24)
-```json
-{
-  "dependencies": {
-    "cors": "^2.8.6",
-    "firebase-admin": "^13.6.0",
-    "firebase-functions": "^7.0.0"
-  },
-  "devDependencies": {
-    "eslint": "^8.15.0",
-    "eslint-config-google": "^0.14.0",
-    "firebase-functions-test": "^3.4.1"
-  }
-}
-```
-
 **Flags:**
 - All frontend dependencies are CDN imports (Firebase JS SDK 10.12.2, Chart.js).
 - Groq API key management documented but key not stored in code.

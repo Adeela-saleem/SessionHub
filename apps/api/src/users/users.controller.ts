@@ -1,13 +1,16 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Query } from '@nestjs/common';
+import { Body, Controller, DefaultValuePipe, Delete, Get, Param, ParseIntPipe, ParseUUIDPipe, Patch, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ApprovalStatus, Role } from '@prisma/client';
-import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEnum, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { NAME_MESSAGE, NAME_RULE } from '../auth/dto/auth.dto';
 import { UsersService } from './users.service';
 import { Roles } from '../common/decorators/roles.decorator';
 import { AuthUser, CurrentUser } from '../common/decorators/current-user.decorator';
 
 class UpdateProfileDto {
-  @IsOptional() @IsString() @MaxLength(80) name?: string;
+  @IsOptional() @IsString() @MinLength(2) @MaxLength(80)
+  @Matches(NAME_RULE, { message: NAME_MESSAGE })
+  name?: string;
   @IsOptional() @IsString() @MaxLength(80) department?: string;
   @IsOptional() @IsString() @MaxLength(500) avatarUrl?: string;
 }
@@ -26,8 +29,8 @@ export class UsersController {
   findAll(
     @Query('role') role?: Role,
     @Query('status') status?: ApprovalStatus,
-    @Query('take') take?: number,
-    @Query('skip') skip?: number,
+    @Query('take', new DefaultValuePipe(100), ParseIntPipe) take?: number,
+    @Query('skip', new DefaultValuePipe(0), ParseIntPipe) skip?: number,
   ) { return this.users.findAll(role, status, take, skip); }
 
   @Roles(Role.ADMIN)

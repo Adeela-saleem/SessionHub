@@ -1,20 +1,24 @@
-import type { ReactNode } from 'react';
-import { NAV } from '../../components/shell/nav';
+import { useEffect, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { NAV, SECONDARY_NAV } from '../../components/shell/nav';
 import { ICONS } from '../../components/icons';
 import type { Role } from '../../lib/types';
 
 /* ============================================================
    Product frames
    Faithful, marketing-scale reproductions of screens that ship
-   in this application. The sidebar is generated from the same
-   NAV configuration the real shell uses, so the navigation
-   shown here cannot drift from the navigation that exists.
-   No screen, metric or label below depicts a feature the
-   product does not have.
+   in this application, drawn with the same structure the shell
+   uses: the rail is generated from the real NAV data, the KPI
+   row is ruled not boxed, lists are tables. Nothing below
+   depicts a feature the product does not have; every number is
+   a demonstration value inside a product frame.
    ============================================================ */
 
+const ROLE_WORD: Record<Role, string> = { STUDENT: 'Student', TEACHER: 'Teacher', ADMIN: 'Administrator' };
+const ROLE_NAME: Record<Role, string> = { STUDENT: 'Ada Lovelace', TEACHER: 'Rabia Ahmed', ADMIN: 'Super Admin' };
+
 export function ProductWindow({
-  role, active, path, title, children, className = '', chromeless, sidebar = true,
+  role, active, path, title, children, className = '', chromeless, sidebar = true, live,
 }: {
   role: Role;
   /** Route of the nav item to show as current. */
@@ -26,7 +30,11 @@ export function ProductWindow({
   chromeless?: boolean;
   /** Cropped compositions drop the rail rather than hiding it. */
   sidebar?: boolean;
+  /** Shows the header's live pill. */
+  live?: boolean;
 }) {
+  const section = [...NAV[role].flatMap((g) => g.items), ...SECONDARY_NAV[role]]
+    .find((i) => i.to === active)?.label ?? 'Overview';
   return (
     <figure className={`pf ${className}`.trim()} aria-labelledby={`pf-${path.replace(/\W/g, '')}`}>
       {!chromeless && (
@@ -40,7 +48,18 @@ export function ProductWindow({
       )}
       <div className={`pf-body ${sidebar ? '' : 'is-solo'}`.trim()}>
         {sidebar && <ProductSidebar role={role} active={active} />}
-        <div className="pf-main">{children}</div>
+        <div className="pf-main">
+          <div className="pf-top" aria-hidden="true">
+            <span className="pf-crumbs">{section}</span>
+            <span className="pf-top-end">
+              {live && <span className="pf-pill is-live"><i />Live</span>}
+              <span className="pf-find">Search<kbd>⌘K</kbd></span>
+              <span className="pf-icon" />
+              <span className="pf-icon" />
+            </span>
+          </div>
+          {children}
+        </div>
       </div>
       <figcaption id={`pf-${path.replace(/\W/g, '')}`} className="sr-only">{title}</figcaption>
     </figure>
@@ -48,12 +67,17 @@ export function ProductWindow({
 }
 
 function ProductSidebar({ role, active }: { role: Role; active: string }) {
+  const initials = ROLE_NAME[role].split(' ').map((n) => n[0]).join('');
   return (
     <div className="pf-side" aria-hidden="true">
       <div className="pf-brand"><span>S</span>SessionHub</div>
-      {NAV[role].map((group) => (
-        <div className="pf-navgroup" key={group.label}>
-          <span className="pf-navlabel">{group.label}</span>
+      <div className="pf-context">
+        <span className="pf-av">{initials}</span>
+        <span className="pf-context-id">Computer Science<em>{ROLE_WORD[role]}</em></span>
+      </div>
+      {NAV[role].map((group, gi) => (
+        <div className="pf-navgroup" key={group.label ?? gi}>
+          {group.label && <span className="pf-navlabel">{group.label}</span>}
           {group.items.map((item) => {
             const Ico = ICONS[item.icon];
             return (
@@ -64,91 +88,120 @@ function ProductSidebar({ role, active }: { role: Role; active: string }) {
           })}
         </div>
       ))}
+      <div className="pf-side-foot">
+        {SECONDARY_NAV[role].map((item) => {
+          const Ico = ICONS[item.icon];
+          return <span key={item.to} className="pf-navitem"><Ico size={12} />{item.label}</span>;
+        })}
+        <span className="pf-user"><span className="pf-av">{initials}</span><span className="pf-context-id">{ROLE_NAME[role]}<em>{ROLE_WORD[role].toLowerCase()}@sessionhub.edu</em></span></span>
+      </div>
     </div>
   );
 }
 
-/** The bar every screen carries above its content. */
-function PfTop({ crumbs, children }: { crumbs: string[]; children?: ReactNode }) {
-  return (
-    <div className="pf-top" aria-hidden="true">
-      <span className="pf-crumbs">
-        {crumbs.map((c, i) => (
-          <span key={c}>{i > 0 && <i>/</i>}{c}</span>
-        ))}
-      </span>
-      {children}
-    </div>
-  );
-}
-
-function PfHead({ eyebrow, title, action }: { eyebrow: string; title: string; action?: ReactNode }) {
+function PfHead({ title, lede, action }: { title: string; lede?: string; action?: ReactNode }) {
   return (
     <div className="pf-head" aria-hidden="true">
       <div>
-        <span className="pf-eyebrow">{eyebrow}</span>
         <h4>{title}</h4>
+        {lede && <span className="pf-lede">{lede}</span>}
       </div>
       {action}
     </div>
   );
 }
 
+function PfSection({ title, sub, link, children }: { title: string; sub?: string; link?: string; children: ReactNode }) {
+  return (
+    <div className="pf-section" aria-hidden="true">
+      <div className="pf-section-head">
+        <span>{title}{sub && <em>{sub}</em>}</span>
+        {link && <span className="pf-link">{link} →</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 /* ============================================================
-   Teacher — live control. The signature screen: a room code
-   sized to be read from the back of a hall, and the question
-   queue the teacher works through while talking.
+   Teacher — live classroom. The signature screen: status bar,
+   the open question on the stage, the queue, and the controls.
    ============================================================ */
+function useLivePulse(enabled = true) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!enabled) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const id = window.setInterval(() => setTick((t) => (t + 1) % 8), 2600);
+    return () => window.clearInterval(id);
+  }, [enabled]);
+  return tick;
+}
+
 export function TeacherLiveScreen() {
+  const tick = useLivePulse();
+  // Demonstration values only — nothing here is a claim about usage.
+  const answered = 26 + tick * 2;
   const queue = [
     { n: 1, prompt: 'Which normal form removes transitive dependencies?', state: 'closed', answers: 38 },
-    { n: 2, prompt: 'A relation in 2NF must already satisfy which condition?', state: 'open', answers: 26 },
+    { n: 2, prompt: 'A relation in 2NF must already satisfy which condition?', state: 'open', answers: answered },
     { n: 3, prompt: 'Name one anomaly that normalisation is designed to prevent.', state: 'pending', answers: 0 },
   ];
+  const options = ['Being in first normal form', 'Having no transitive dependencies', 'Having a composite key', 'Being in Boyce–Codd form'];
   return (
-    <ProductWindow role="TEACHER" active="/teacher/live" path="/teacher/live" title="Teacher live control — room code and question queue">
-      <PfTop crumbs={['SessionHub', 'Live control']}>
-        <span className="pf-pill is-live"><i />Session live</span>
-      </PfTop>
-
+    <ProductWindow role="TEACHER" active="/teacher/live" path="/teacher/live" live title="Teacher live classroom — status bar, open question and queue">
       <div className="pf-pad">
-        <PfHead
-          eyebrow="CS-204"
-          title="Database Systems"
-          action={<span className="pf-btn is-danger">End session</span>}
-        />
-
-        <div className="pf-room" aria-hidden="true">
-          <div>
-            <span className="pf-room-label">Room code</span>
-            <div className="pf-code">{'DBMS7K'.split('').map((c, i) => <span key={i}>{c}</span>)}</div>
-          </div>
-          <dl className="pf-room-stats">
+        <div className="pf-livebar" aria-hidden="true">
+          <span className="pf-livebar-id"><i />Database Systems<code>CS-204</code></span>
+          <span className="pf-livebar-code"><em>Room</em><span className="pf-code">{'DBMS7K'.split('').map((c, i) => <span key={i}>{c}</span>)}</span></span>
+          <dl className="pf-livebar-facts">
             <div><dt>In the room</dt><dd>42</dd></div>
-            <div><dt>Answered</dt><dd>26</dd></div>
-            <div><dt>Questions</dt><dd>8</dd></div>
+            <div><dt>Answered</dt><dd className="pf-tick">{answered}/42</dd></div>
+            <div><dt>Questions</dt><dd>1/8</dd></div>
+            <div><dt>Elapsed</dt><dd><code>24:13</code></dd></div>
           </dl>
+          <span className="pf-livebar-actions"><span className="pf-btn is-sm">Add questions</span><span className="pf-btn is-sm is-danger">End session</span></span>
         </div>
 
-        <div className="pf-card" aria-hidden="true">
-          <div className="pf-card-head">
-            <span>Question queue</span>
-            <span className="pf-muted">1 of 8 done</span>
+        <div className="pf-stage" aria-hidden="true">
+          <div className="pf-stage-head">
+            <span><span className="pf-pill is-open">Open</span>Question 2 of 8 · 2 marks</span>
+            <span className="pf-muted">{answered} of 42 answered</span>
           </div>
-          <ul className="pf-queue">
-            {queue.map((q) => (
-              <li key={q.n} className={q.state === 'open' ? 'is-open' : ''}>
-                <span className="pf-order">{q.n}</span>
-                <span className="pf-queue-text">
-                  {q.prompt}
-                  <em>{q.answers} answers · 2 marks</em>
-                </span>
-                <span className={`pf-pill is-${q.state}`}>
-                  {q.state === 'open' ? 'Open' : q.state === 'closed' ? 'Closed' : 'Pending'}
-                </span>
+          <span className="pf-track pf-track-thin"><i className="is-accent" style={{ width: `${(answered / 42) * 100}%` }} /></span>
+          <p className="pf-question">A relation in 2NF must already satisfy which condition?</p>
+          <ul className="pf-options is-compact">
+            {options.map((o, i) => (
+              <li key={o} className={i === 0 ? 'is-correct' : ''}>
+                <span className="pf-key">{String.fromCharCode(65 + i)}</span>{o}
+                {i === 0 && <em>Key</em>}
               </li>
             ))}
           </ul>
+        </div>
+
+        <PfSection title="Question queue" sub="1 of 8 done">
+          <table className="pf-table is-bare">
+            <thead><tr><th>#</th><th>Question</th><th className="is-num">Answers</th><th>State</th></tr></thead>
+            <tbody>
+              {queue.map((q) => (
+                <tr key={q.n}>
+                  <td><code>{q.n}</code></td>
+                  <td className={q.state === 'closed' ? 'pf-muted' : 'is-primary'}>{q.prompt}</td>
+                  <td className="is-num">{q.answers}</td>
+                  <td><span className={`pf-pill is-${q.state}`}>{q.state === 'open' ? 'Open' : q.state === 'closed' ? 'Closed' : 'Pending'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </PfSection>
+
+        <div className="pf-controls" aria-hidden="true">
+          <span>Q2 open<em> · 1/8 done</em></span>
+          <span className="pf-controls-end">
+            <span className="pf-btn is-sm">Launch poll<kbd>P</kbd></span>
+            <span className="pf-btn is-sm is-primary">Close &amp; reveal<kbd>C</kbd></span>
+          </span>
         </div>
       </div>
     </ProductWindow>
@@ -156,55 +209,80 @@ export function TeacherLiveScreen() {
 }
 
 /* ============================================================
-   Student — dashboard
+   Student — overview
    ============================================================ */
 export function StudentHomeScreen({ chromeless }: { chromeless?: boolean } = {}) {
+  const today = [
+    { time: '09:00–10:30', course: 'Database Systems', code: 'CS-204', room: 'LT-4', state: 'live' },
+    { time: '11:00–12:00', course: 'Linear Algebra', code: 'MA-118', room: 'B-210', state: 'next' },
+    { time: '14:00–15:30', course: 'Classical Mechanics', code: 'PH-102', room: 'Lab 2', state: '' },
+  ];
   const courses = [
-    { code: 'CS-204', name: 'Database Systems', rate: 92 },
-    { code: 'MA-118', name: 'Linear Algebra', rate: 78 },
-    { code: 'PH-102', name: 'Classical Mechanics', rate: 61 },
+    { code: 'CS-204', name: 'Database Systems', teacher: 'Rabia Ahmed', rate: 92 },
+    { code: 'MA-118', name: 'Linear Algebra', teacher: 'Daniel Okafor', rate: 78 },
+    { code: 'PH-102', name: 'Classical Mechanics', teacher: 'Mariam Haddad', rate: 61 },
   ];
   return (
     <ProductWindow
-      role="STUDENT" active="/student" path="/student" chromeless={chromeless}
-      title="Student dashboard — standing and course attendance"
+      role="STUDENT" active="/student" path="/student" chromeless={chromeless} live
+      title="Student overview — today, standing and courses"
     >
-      <PfTop crumbs={['SessionHub', 'Dashboard']} />
       <div className="pf-pad">
-        <PfHead eyebrow="Tuesday, 14 October" title="Good morning, Ada" />
+        <PfHead title="Overview" lede="Tuesday, 14 October" action={<span className="pf-btn is-primary">Join a session</span>} />
 
-        <div className="pf-banner" aria-hidden="true">
+        <div className="pf-now" aria-hidden="true">
           <i />
-          <span><strong>A class is live right now</strong>Database Systems — ask your teacher for the room code.</span>
-          <span className="pf-btn is-ghost">Join</span>
+          <span><strong>A class is live now</strong>Database Systems — ask your teacher for the room code.</span>
+          <span className="pf-btn is-sm is-primary">Join now</span>
         </div>
 
         <div className="pf-stats" aria-hidden="true">
-          <div><span>Answer accuracy</span><b>78%</b><em>124 questions answered</em></div>
-          <div><span>Attendance</span><b>91%</b><em>31 sessions attended</em></div>
-          <div><span>Marks earned</span><b>248</b><em>Across all courses</em></div>
-          <div><span>Courses</span><b>4</b><em>Currently enrolled</em></div>
+          <div><span>Answer accuracy</span><b>78%</b><em>124 answered</em></div>
+          <div><span>Attendance</span><b>91%</b><em>31 sessions</em></div>
+          <div><span>Marks earned</span><b>248</b><em>All courses</em></div>
+          <div><span>Due</span><b>2</b><em>Not yet submitted</em></div>
+          <div><span>Courses</span><b>4</b><em>Enrolled</em></div>
         </div>
 
-        <div className="pf-card" aria-hidden="true">
-          <div className="pf-card-head"><span>Your courses</span><span className="pf-muted">Attendance</span></div>
-          <div className="pf-meters">
-            {courses.map((c) => (
-              <div key={c.code}>
-                <div className="pf-meter-head">
-                  <span>{c.code}<em>{c.name}</em></span>
-                  <span className="pf-muted">{c.rate}%</span>
-                </div>
-                <span className="pf-track">
-                  <i
-                    className={c.rate >= 75 ? 'is-good' : c.rate >= 45 ? 'is-warn' : 'is-bad'}
-                    style={{ width: `${c.rate}%` }}
-                  />
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <PfSection title="Today" sub="Next: MA-118 at 11:00" link="Full schedule">
+          <table className="pf-table is-bare">
+            <thead><tr><th>Time</th><th>Course</th><th>Code</th><th>Room</th><th /></tr></thead>
+            <tbody>
+              {today.map((t) => (
+                <tr key={t.code}>
+                  <td><code>{t.time}</code></td>
+                  <td className="is-primary">{t.course}</td>
+                  <td><code>{t.code}</code></td>
+                  <td className="pf-muted">{t.room}</td>
+                  <td className="is-num">
+                    {t.state === 'live' ? <span className="pf-pill is-live"><i />Live</span> : t.state === 'next' ? <span className="pf-pill is-accent">Next</span> : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </PfSection>
+
+        <PfSection title="My courses" link="View all">
+          <table className="pf-table is-bare">
+            <thead><tr><th>Code</th><th>Course</th><th>Teacher</th><th>Attendance</th></tr></thead>
+            <tbody>
+              {courses.map((c) => (
+                <tr key={c.code}>
+                  <td><code>{c.code}</code></td>
+                  <td className="is-primary">{c.name}</td>
+                  <td className="pf-muted">{c.teacher}</td>
+                  <td>
+                    <span className="pf-cell-progress">
+                      <span className="pf-track"><i className={c.rate >= 75 ? 'is-good' : c.rate >= 45 ? 'is-warn' : 'is-bad'} style={{ width: `${c.rate}%` }} /></span>
+                      <span>{c.rate}%</span>
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </PfSection>
       </div>
     </ProductWindow>
   );
@@ -214,39 +292,34 @@ export function StudentHomeScreen({ chromeless }: { chromeless?: boolean } = {})
    Student — the live room, mid-question
    ============================================================ */
 export function StudentLiveScreen({ chromeless }: { chromeless?: boolean }) {
-  const options = [
-    'Third normal form',
-    'Second normal form',
-    'Boyce-Codd normal form',
-    'First normal form',
-  ];
+  const options = ['Third normal form', 'Second normal form', 'Boyce-Codd normal form', 'First normal form'];
   return (
     <ProductWindow
-      role="STUDENT" active="/student/live" path="/student/live" chromeless={chromeless}
+      role="STUDENT" active="/student/live" path="/student/live" chromeless={chromeless} live
       title="Student live session — answering an open question"
     >
-      <PfTop crumbs={['SessionHub', 'Live session']}>
-        <span className="pf-pill is-live"><i />Live</span>
-      </PfTop>
       <div className="pf-pad">
-        <PfHead eyebrow="CS-204" title="Database Systems" />
-        <div className="pf-card" aria-hidden="true">
-          <div className="pf-card-head">
-            <span>Question 2 · 2 marks</span>
+        <div className="pf-livebar" aria-hidden="true">
+          <span className="pf-livebar-id"><i />Database Systems<code>CS-204</code></span>
+          <span className="pf-livebar-code"><em>Room</em><span className="pf-code is-sm">{'DBMS7K'.split('').map((c, i) => <span key={i}>{c}</span>)}</span></span>
+          <dl className="pf-livebar-facts"><div><dt>In the room</dt><dd>42</dd></div></dl>
+          <span className="pf-livebar-actions"><span className="pf-btn is-sm is-danger">Leave</span></span>
+        </div>
+        <div className="pf-stage" aria-hidden="true">
+          <div className="pf-stage-head">
+            <span>Question 2<span className="pf-muted"> · 2 marks</span></span>
             <span className="pf-timer">18s</span>
           </div>
-          <div className="pf-qbody">
-            <span className="pf-track pf-track-thin"><i className="is-accent" style={{ width: '46%' }} /></span>
-            <p className="pf-question">Which normal form removes transitive dependencies?</p>
-            <ul className="pf-options">
-              {options.map((o, i) => (
-                <li key={o} className={i === 0 ? 'is-selected' : ''}>
-                  <span className="pf-key">{String.fromCharCode(65 + i)}</span>{o}
-                </li>
-              ))}
-            </ul>
-            <span className="pf-btn is-primary is-block">Submit answer</span>
-          </div>
+          <span className="pf-track pf-track-thin"><i className="is-accent" style={{ width: '46%' }} /></span>
+          <p className="pf-question">Which normal form removes transitive dependencies?</p>
+          <ul className="pf-options">
+            {options.map((o, i) => (
+              <li key={o} className={i === 0 ? 'is-selected' : ''}>
+                <span className="pf-key">{String.fromCharCode(65 + i)}</span>{o}
+              </li>
+            ))}
+          </ul>
+          <div className="pf-stage-actions"><span className="pf-muted">Choose one option, then submit.</span><span className="pf-btn is-primary">Submit answer</span></div>
         </div>
       </div>
     </ProductWindow>
@@ -254,8 +327,8 @@ export function StudentLiveScreen({ chromeless }: { chromeless?: boolean }) {
 }
 
 /* ============================================================
-   Teacher — analytics. The trend is a hand-drawn SVG rather
-   than a chart library: the landing page ships no Recharts.
+   Teacher — analytics. Hand-drawn SVG: the landing page ships
+   no chart library.
    ============================================================ */
 const TREND = [34, 41, 38, 52, 49, 63, 58, 71, 68, 76];
 
@@ -266,9 +339,9 @@ export function TeacherAnalyticsScreen({ chromeless, sidebar }: { chromeless?: b
   const area = `${line} L${w},${h} L0,${h} Z`;
 
   const weak = [
-    { label: 'Q3', prompt: 'Transitive dependencies', pct: 34 },
-    { label: 'Q6', prompt: 'Candidate keys', pct: 52 },
-    { label: 'Q2', prompt: 'Functional dependency', pct: 78 },
+    { label: 'Q3', prompt: 'What isolation level prevents phantom reads?', answers: 38, pct: 34 },
+    { label: 'Q6', prompt: 'Which index type suits range queries best?', answers: 41, pct: 52 },
+    { label: 'Q2', prompt: 'Define a functional dependency.', answers: 40, pct: 66 },
   ];
 
   return (
@@ -277,53 +350,53 @@ export function TeacherAnalyticsScreen({ chromeless, sidebar }: { chromeless?: b
       chromeless={chromeless} sidebar={sidebar}
       title="Teaching analytics — participation and question difficulty"
     >
-      <PfTop crumbs={['SessionHub', 'Analytics']} />
       <div className="pf-pad">
-        <PfHead eyebrow="Insight" title="Analytics" />
+        <PfHead title="Analytics" lede="Participation and comprehension across every session you have run." />
         <div className="pf-stats" aria-hidden="true">
           <div><span>Sessions run</span><b>34</b><em>None live</em></div>
-          <div><span>Questions asked</span><b>212</b><em>Across all sessions</em></div>
-          <div><span>Answers received</span><b>4,180</b><em>From your students</em></div>
-          <div><span>Average accuracy</span><b>68%</b><em>Across every question</em></div>
+          <div><span>Questions asked</span><b>212</b><em>All sessions</em></div>
+          <div><span>Answers received</span><b>4,180</b><em>19.7 per question</em></div>
+          <div><span>Average accuracy</span><b>68%</b><em>Every question</em></div>
         </div>
 
-        <div className="pf-split" aria-hidden="true">
-          <div className="pf-card">
-            <div className="pf-card-head"><span>Participation over time</span></div>
-            <div className="pf-chart">
-              <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="presentation">
-                <defs>
-                  <linearGradient id="pf-fill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--navy-500)" stopOpacity="0.22" />
-                    <stop offset="100%" stopColor="var(--navy-500)" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <line x1="0" y1={h * 0.33} x2={w} y2={h * 0.33} className="pf-grid" />
-                <line x1="0" y1={h * 0.66} x2={w} y2={h * 0.66} className="pf-grid" />
-                <path d={area} fill="url(#pf-fill)" />
-                <path d={line} className="pf-line" />
-                <circle cx={pts[pts.length - 1]![0]} cy={pts[pts.length - 1]![1]} r="2.6" className="pf-dot" />
-              </svg>
-            </div>
+        <PfSection title="Participation over time" sub="Joined and answers, per session">
+          <div className="pf-chart">
+            <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="presentation">
+              <defs>
+                <linearGradient id="pf-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--navy-500)" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="var(--navy-500)" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <line x1="0" y1={h * 0.33} x2={w} y2={h * 0.33} className="pf-grid" />
+              <line x1="0" y1={h * 0.66} x2={w} y2={h * 0.66} className="pf-grid" />
+              <path d={area} fill="url(#pf-fill)" />
+              <path d={line} className="pf-line" />
+              <circle cx={pts[pts.length - 1]![0]} cy={pts[pts.length - 1]![1]} r="2.6" className="pf-dot" />
+            </svg>
           </div>
+        </PfSection>
 
-          <div className="pf-card">
-            <div className="pf-card-head"><span>Where the room struggled</span></div>
-            <div className="pf-meters">
+        <PfSection title="Needs re-teaching" sub="Questions the room answered worst">
+          <table className="pf-table is-bare">
+            <thead><tr><th>Question</th><th /><th className="is-num">Answers</th><th>Correct</th></tr></thead>
+            <tbody>
               {weak.map((q) => (
-                <div key={q.label}>
-                  <div className="pf-meter-head">
-                    <span>{q.label}<em>{q.prompt}</em></span>
-                    <span className="pf-muted">{q.pct}%</span>
-                  </div>
-                  <span className="pf-track">
-                    <i className={q.pct >= 70 ? 'is-good' : q.pct >= 40 ? 'is-warn' : 'is-bad'} style={{ width: `${q.pct}%` }} />
-                  </span>
-                </div>
+                <tr key={q.label}>
+                  <td className="is-primary">{q.prompt}</td>
+                  <td><code>{q.label}</code></td>
+                  <td className="is-num">{q.answers}</td>
+                  <td>
+                    <span className="pf-cell-progress">
+                      <span className="pf-track"><i className={q.pct >= 70 ? 'is-good' : q.pct >= 40 ? 'is-warn' : 'is-bad'} style={{ width: `${q.pct}%` }} /></span>
+                      <span>{q.pct}%</span>
+                    </span>
+                  </td>
+                </tr>
               ))}
-            </div>
-          </div>
-        </div>
+            </tbody>
+          </table>
+        </PfSection>
       </div>
     </ProductWindow>
   );
@@ -334,38 +407,35 @@ export function TeacherAnalyticsScreen({ chromeless, sidebar }: { chromeless?: b
    ============================================================ */
 export function AdminPeopleScreen({ chromeless }: { chromeless?: boolean } = {}) {
   const people = [
-    { name: 'Ayesha Rahman', email: 'a.rahman@university.edu', role: 'Teacher', status: 'Pending', dept: 'Computer Science' },
-    { name: 'Daniel Okafor', email: 'd.okafor@university.edu', role: 'Teacher', status: 'Approved', dept: 'Physics' },
-    { name: 'Ada Lovelace', email: 'ada@university.edu', role: 'Student', status: 'Approved', dept: 'Computer Science' },
-    { name: 'Mariam Haddad', email: 'm.haddad@university.edu', role: 'Student', status: 'Approved', dept: 'Mathematics' },
+    { name: 'Ayesha Rahman', email: 'a.rahman@university.edu', role: 'Teacher', status: 'Pending', dept: 'Computer Science', joined: '2 hours ago' },
+    { name: 'Daniel Okafor', email: 'd.okafor@university.edu', role: 'Teacher', status: 'Approved', dept: 'Physics', joined: '3 days ago' },
+    { name: 'Ada Lovelace', email: 'ada@university.edu', role: 'Student', status: 'Approved', dept: 'Computer Science', joined: '5 days ago' },
+    { name: 'Mariam Haddad', email: 'm.haddad@university.edu', role: 'Student', status: 'Approved', dept: 'Mathematics', joined: '5 days ago' },
+    { name: 'Jonas Weber', email: 'j.weber@university.edu', role: 'Student', status: 'Approved', dept: 'Mathematics', joined: '1 week ago' },
   ];
   return (
     <ProductWindow
       role="ADMIN" active="/admin/users" path="/admin/users" chromeless={chromeless}
       title="Administrator — people management table"
     >
-      <PfTop crumbs={['SessionHub', 'People']} />
       <div className="pf-pad">
-        <PfHead eyebrow="Management" title="People" />
-        <div className="pf-stats" aria-hidden="true">
-          <div><span>Accounts shown</span><b>1,284</b><em>Matching the filter</em></div>
-          <div><span>Students</span><b>1,196</b><em>In this view</em></div>
-          <div><span>Teachers</span><b>84</b><em>In this view</em></div>
-          <div><span>Pending review</span><b>2</b><em>Cannot sign in yet</em></div>
-        </div>
+        <PfHead title="People" lede="Every account on the platform." action={<span className="pf-btn is-primary">Invite</span>} />
 
-        <div className="pf-card" aria-hidden="true">
-          <div className="pf-toolbar">
-            <span className="pf-search">Search name, email or department</span>
-            <span className="pf-seg"><i className="is-on">All</i><i>Students</i><i>Teachers</i></span>
-          </div>
+        <div className="pf-toolbar" aria-hidden="true">
+          <span className="pf-search">Search name, email or department</span>
+          <span className="pf-seg"><i className="is-on">All</i><i>Students</i><i>Teachers</i><i>Admins</i></span>
+          <span className="pf-seg"><i className="is-on">Any status</i><i>Approved</i><i>Pending</i></span>
+          <span className="pf-btn is-sm" style={{ marginLeft: 'auto' }}>Export CSV</span>
+        </div>
+        <div className="pf-tableframe" aria-hidden="true">
           <table className="pf-table">
             <thead>
-              <tr><th>Name</th><th>Role</th><th>Status</th><th>Department</th></tr>
+              <tr><th /><th>Name</th><th>Role</th><th>Status</th><th>Department</th><th>Joined</th></tr>
             </thead>
             <tbody>
               {people.map((p) => (
                 <tr key={p.email}>
+                  <td><span className="pf-check" /></td>
                   <td>
                     <span className="pf-person">
                       <span className="pf-av">{p.name.split(' ').map((n) => n[0]).join('')}</span>
@@ -375,10 +445,12 @@ export function AdminPeopleScreen({ chromeless }: { chromeless?: boolean } = {})
                   <td><span className={`pf-pill ${p.role === 'Teacher' ? 'is-accent' : 'is-info'}`}>{p.role}</span></td>
                   <td><span className={`pf-pill ${p.status === 'Pending' ? 'is-warn' : 'is-ok'}`}>{p.status}</span></td>
                   <td className="pf-muted">{p.dept}</td>
+                  <td className="pf-muted">{p.joined}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <div className="pf-pagination"><span>Showing 1–5 of 1,284</span><span className="pf-pages"><i>‹</i><i className="is-on">1</i><i>2</i><i>3</i><i>…</i><i>257</i><i>›</i></span></div>
         </div>
       </div>
     </ProductWindow>
@@ -395,20 +467,11 @@ export function QuizStudioScreen({ chromeless }: { chromeless?: boolean }) {
       role="TEACHER" active="/teacher/studio" path="/teacher/studio" chromeless={chromeless}
       title="Quiz studio — reviewing generated questions before broadcast"
     >
-      <PfTop crumbs={['SessionHub', 'Quiz studio']} />
       <div className="pf-pad">
-        <PfHead
-          eyebrow="Teaching"
-          title="Quiz studio"
-          action={<span className="pf-btn is-primary">Broadcast</span>}
-        />
-        <div className="pf-card" aria-hidden="true">
-          <div className="pf-card-head">
-            <span>Review 5 questions</span>
-            <span className="pf-muted">Correct answers marked</span>
-          </div>
-          <div className="pf-draft">
-            <div className="pf-draft-head"><span className="pf-order">1</span>Which normal form removes transitive dependencies?</div>
+        <PfHead title="Quiz studio" lede="Draft with AI, review every answer key, then broadcast." action={<span className="pf-btn is-primary">Broadcast 5 questions</span>} />
+        <PfSection title="Drafts" sub="5 questions · correct answers marked">
+          <div className="pf-draft" aria-hidden="true">
+            <div className="pf-draft-head"><code>1</code>Which normal form removes transitive dependencies?<span className="pf-muted">2 marks</span></div>
             <ul className="pf-options is-compact">
               {options.map((o, i) => (
                 <li key={o} className={i === 0 ? 'is-correct' : ''}>
@@ -417,11 +480,15 @@ export function QuizStudioScreen({ chromeless }: { chromeless?: boolean }) {
                 </li>
               ))}
             </ul>
+            <span className="pf-draft-explain">Explanation · 3NF requires that no non-key attribute depends on another non-key attribute.</span>
           </div>
-          <div className="pf-draft is-dim">
-            <div className="pf-draft-head"><span className="pf-order">2</span>A relation in 2NF must already satisfy which condition?</div>
+          <div className="pf-draft is-dim" aria-hidden="true">
+            <div className="pf-draft-head"><code>2</code>A relation in 2NF must already satisfy which condition?<span className="pf-muted">2 marks</span></div>
           </div>
-        </div>
+          <div className="pf-draft is-dim" aria-hidden="true">
+            <div className="pf-draft-head"><code>3</code>Name one anomaly that normalisation prevents.<span className="pf-muted">Written · 2 marks</span></div>
+          </div>
+        </PfSection>
       </div>
     </ProductWindow>
   );
@@ -429,9 +496,6 @@ export function QuizStudioScreen({ chromeless }: { chromeless?: boolean }) {
 
 /* ============================================================
    Phone — the same live session as a student actually sees it.
-   The premise of the product is that the device is already in
-   the room, so the second layer of the hero is a phone rather
-   than a second desktop window.
    ============================================================ */
 export function PhoneFrame() {
   const options = ['Third normal form', 'Second normal form', 'Boyce-Codd normal form'];
@@ -466,10 +530,7 @@ export function PhoneFrame() {
 }
 
 /* ============================================================
-   Fragments
-   Single pieces of interface, lifted out of their screens. They
-   carry the institution section, so its cells can show state
-   rather than describe it.
+   Fragments — single pieces of interface, lifted out.
    ============================================================ */
 
 export function ApprovalsFragment() {
@@ -489,8 +550,8 @@ export function ApprovalsFragment() {
         </div>
       ))}
       <div className="frag-row frag-row-action">
-        <span className="pf-btn is-primary">Approve</span>
-        <span className="pf-btn">Reject</span>
+        <span className="pf-btn is-sm is-primary">Approve</span>
+        <span className="pf-btn is-sm">Reject</span>
       </div>
     </div>
   );
@@ -519,6 +580,29 @@ export function TrendFragment() {
   );
 }
 
+export function AuditFragment() {
+  const rows = [
+    { when: '10:42', actor: 'Super Admin', action: 'user.approve', summary: 'Approved Ayesha Rahman as a teacher' },
+    { when: '10:38', actor: 'Rabia Ahmed', action: 'session.close', summary: 'Closed CS-204 · 42 attended' },
+    { when: '09:05', actor: 'Rabia Ahmed', action: 'slot.create', summary: 'Scheduled CS-204 on Tue 09:00–10:30' },
+  ];
+  return (
+    <div className="frag" aria-hidden="true">
+      <table className="pf-table is-bare">
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.when}>
+              <td><code>{r.when}</code></td>
+              <td className="is-primary">{r.summary}</td>
+              <td><code>{r.action}</code></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function DepartmentsFragment() {
   const departments = [
     { name: 'Computer Science', pct: 92 },
@@ -533,6 +617,127 @@ export function DepartmentsFragment() {
           <span className="pf-track"><i style={{ width: `${d.pct}%` }} /></span>
         </div>
       ))}
+    </div>
+  );
+}
+
+/* ============================================================
+   Process visuals — one compact fragment per step of a session.
+   ============================================================ */
+
+export function StepOpen() {
+  return (
+    <div className="sv" aria-hidden="true">
+      <div className="sv-bar">
+        <span className="sv-course">CS-204 · Database Systems</span>
+        <span className="pf-pill is-live"><i />Live</span>
+      </div>
+      <div className="sv-body sv-open">
+        <span className="sv-label">Room code</span>
+        <div className="sv-code">
+          {'DBMS7K'.split('').map((c, i) => (
+            <span key={i} style={{ '--i': i } as CSSProperties}>{c}</span>
+          ))}
+        </div>
+        <span className="sv-note">Session started · attendance recording</span>
+      </div>
+    </div>
+  );
+}
+
+export function StepJoin() {
+  return (
+    <div className="sv sv-centred" aria-hidden="true">
+      <div className="sv-phone">
+        <div className="sv-phone-screen">
+          <span className="sv-label">Join a session</span>
+          <div className="sv-entry">
+            {['D', 'B', 'M', 'S', '7', ''].map((c, i) => (
+              <span key={i} className={c ? 'is-filled' : 'is-caret'}>{c}</span>
+            ))}
+          </div>
+          <span className="sv-cta">Join session</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function StepAsk() {
+  const options = ['Third normal form', 'Second normal form', 'First normal form'];
+  return (
+    <div className="sv" aria-hidden="true">
+      <div className="sv-bar">
+        <span className="sv-course">Quiz studio · draft</span>
+        <span className="sv-approve">Review</span>
+      </div>
+      <div className="sv-body">
+        <p className="sv-question">Which normal form removes transitive dependencies?</p>
+        <ul className="sv-options">
+          {options.map((o, i) => (
+            <li key={o} className={i === 0 ? 'is-correct' : ''}>
+              <span className="pf-key">{String.fromCharCode(65 + i)}</span>{o}
+              {i === 0 && <em>Correct</em>}
+            </li>
+          ))}
+        </ul>
+        <span className="sv-note">AI drafted · the teacher approves before it broadcasts</span>
+      </div>
+    </div>
+  );
+}
+
+const REVEAL_BARS = [
+  { label: 'Third normal form', pct: 64, correct: true },
+  { label: 'Second normal form', pct: 22, correct: false },
+  { label: 'Boyce-Codd form', pct: 14, correct: false },
+];
+
+export function StepReveal() {
+  return (
+    <div className="sv" aria-hidden="true">
+      <div className="sv-bar">
+        <span className="sv-course">Question 02 · closed</span>
+        <span className="sv-count">38 of 42 answered</span>
+      </div>
+      <div className="sv-body">
+        <ul className="sv-bars">
+          {REVEAL_BARS.map((b, i) => (
+            <li key={b.label} className={b.correct ? 'is-correct' : ''} style={{ '--i': i } as CSSProperties}>
+              <span className="pf-key">{String.fromCharCode(65 + i)}</span>
+              <span className="sv-bar-label">{b.label}</span>
+              <span className="sv-bar-track"><i style={{ '--w': `${b.pct}%` } as CSSProperties} /></span>
+              <span className="sv-bar-pct">{b.pct}%</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+export function StepUnderstand() {
+  const rows = [
+    { label: 'Attendance', value: '42 of 46', pct: 91, tone: 'is-good' },
+    { label: 'Accuracy', value: '64%', pct: 64, tone: 'is-warn' },
+    { label: 'Marks recorded', value: '38', pct: 100, tone: 'is-good' },
+  ];
+  return (
+    <div className="sv" aria-hidden="true">
+      <div className="sv-bar">
+        <span className="sv-course">Session recorded</span>
+        <span className="sv-count">Before the class left</span>
+      </div>
+      <div className="sv-body sv-metrics">
+        {rows.map((r, i) => (
+          <div key={r.label} style={{ '--i': i } as CSSProperties}>
+            <div className="sv-metric-head">
+              <span>{r.label}</span><strong>{r.value}</strong>
+            </div>
+            <span className="sv-bar-track"><i className={r.tone} style={{ '--w': `${r.pct}%` } as CSSProperties} /></span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -49,6 +49,29 @@ enum QuestionState {
   CLOSED
 }
 
+// Content moves DRAFT → PUBLISHED, or is scheduled to publish at a
+// future instant. ARCHIVED keeps history without showing it to students.
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
+}
+
+enum LessonType {
+  TEXT
+  VIDEO
+  RESOURCE
+  EMBED
+  LIVE
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
 // ────────────────────────────────────────────────────────────
 model User {
   id             String         @id @default(uuid())
@@ -72,6 +95,14 @@ model User {
   pollVotes      PollVote[]
   refreshTokens  RefreshToken[]
   papers         PaperFormat[]
+  savedQuizzes   SavedQuiz[]
+  lessonProgress LessonProgress[]
+  auditLogs      AuditLog[]
+  submissions    Submission[]     @relation("StudentSubmissions")
+  gradedWork     Submission[]     @relation("GradedSubmissions")
+  announcements  Announcement[]
+  notifications  Notification[]
+  storedFiles    StoredFile[]
 
   @@index([role, approvalStatus])
   @@map("users")
@@ -104,6 +135,10 @@ model Course {
   enrollments Enrollment[]
   sessions    ClassSession[]
   schedule    ScheduleSlot[]
+  modules     Module[]
+  assignments Assignment[]
+  gradeCategories GradeCategory[]
+  announcementsFeed Announcement[]
 
   @@index([teacherId])
   @@map("courses")
@@ -285,6 +320,23 @@ model Question2 {
 }
 
 // ────────────────────────────────────────────────────────────
+/// A reviewed quiz draft kept for reuse. Questions are stored as the
+/// same draft shape the studio edits, answer keys included, so opening
+/// one puts the teacher exactly where they left off.
+model SavedQuiz {
+  id        String   @id @default(uuid())
+  teacherId String
+  teacher   User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  title     String
+  topic     String?
+  questions Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teacherId])
+  @@map("saved_quizzes")
+}
+
 model PaperFormat {
   id        String   @id @default(uuid())
   teacherId String
@@ -295,4 +347,284 @@ model PaperFormat {
 
   @@index([teacherId])
   @@map("paper_formats")
+}
+
+
+// ────────────────────────────────────────────────────────────
+//  Course content — Course → Module → Lesson → Resource
+//  `order` is a plain Int rather than a unique constraint: a
+//  reorder rewrites every sibling inside one transaction, and a
+//  unique index would reject the intermediate states.
+// ────────────────────────────────────────────────────────────
+
+model Module {
+  id        String        @id @default(uuid())
+  courseId  String
+  course    Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title     String
+  summary   String?
+  order     Int           @default(0)
+  status    ContentStatus @default(DRAFT)
+  publishAt DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  lessons Lesson[]
+
+  @@index([courseId, order])
+  @@map("modules")
+}
+
+model Lesson {
+  id          String        @id @default(uuid())
+  moduleId    String
+  module      Module        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title       String
+  type        LessonType    @default(TEXT)
+  /// Markdown for TEXT, an embed URL for VIDEO/EMBED, null for RESOURCE.
+  body        String?
+  url         String?
+  durationMin Int?
+  order       Int           @default(0)
+  status      ContentStatus @default(DRAFT)
+  publishAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  resources Resource[]
+  progress  LessonProgress[]
+
+  @@index([moduleId, order])
+  @@map("lessons")
+}
+
+model Resource {
+  id        String   @id @default(uuid())
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title     String
+  url       String
+  mimeType  String?
+  sizeBytes Int?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([lessonId, order])
+  @@map("resources")
+}
+
+/// One row per student per lesson. `positionSec` is what makes
+/// "resume where you stopped" possible for video and long text.
+model LessonProgress {
+  id          String         @id @default(uuid())
+  lessonId    String
+  studentId   String
+  lesson      Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  student     User           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status      ProgressStatus @default(NOT_STARTED)
+  percent     Int            @default(0)
+  positionSec Int            @default(0)
+  startedAt   DateTime?
+  completedAt DateTime?
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([lessonId, studentId])
+  @@index([studentId, status])
+  @@map("lesson_progress")
+}
+
+// ────────────────────────────────────────────────────────────
+//  Audit log — append only. Nothing in the API updates or
+//  deletes a row here; that is the point of it.
+// ────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail String
+  action     String
+  targetType String
+  targetId   String?
+  summary    String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@map("audit_logs")
+}
+
+// ────────────────────────────────────────────────────────────
+//  Assignments — Assignment → Submission (one row per student,
+//  resubmission bumps `attempt` rather than duplicating rows;
+//  the grading history lives in the audit log).
+// ────────────────────────────────────────────────────────────
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  GRADED
+  RETURNED
+}
+
+enum GradeCategoryKind {
+  ASSIGNMENTS
+  LIVE_QUIZZES
+  ATTENDANCE
+}
+
+enum FilePurpose {
+  ASSIGNMENT_ATTACHMENT
+  SUBMISSION_FILE
+}
+
+enum AnnouncementPriority {
+  NORMAL
+  IMPORTANT
+}
+
+/// Weighted grading bucket. ASSIGNMENTS categories own assignments;
+/// LIVE_QUIZZES and ATTENDANCE are computed from session data, so a
+/// course's whole grade lives in one model.
+model GradeCategory {
+  id        String            @id @default(uuid())
+  courseId  String
+  course    Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name      String
+  kind      GradeCategoryKind @default(ASSIGNMENTS)
+  weightPct Int
+  order     Int               @default(0)
+  createdAt DateTime          @default(now())
+
+  assignments Assignment[]
+
+  @@index([courseId, order])
+  @@map("grade_categories")
+}
+
+model Assignment {
+  id             String        @id @default(uuid())
+  courseId       String
+  course         Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  categoryId     String?
+  category       GradeCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  title          String
+  /// Markdown. Rendered with the same renderer as lesson bodies.
+  instructions   String
+  maxMarks       Int           @default(100)
+  dueAt          DateTime
+  availableFrom  DateTime?
+  status         ContentStatus @default(DRAFT)
+  publishAt      DateTime?
+  allowLate      Boolean       @default(true)
+  /// Flat percentage knocked off a late submission's marks at grading
+  /// time — surfaced to the teacher as a suggestion, never silent.
+  latePenaltyPct Int           @default(0)
+  resubmissions  Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  submissions Submission[]
+  files       StoredFile[]
+
+  @@index([courseId, dueAt])
+  @@index([status])
+  @@map("assignments")
+}
+
+model Submission {
+  id           String           @id @default(uuid())
+  assignmentId String
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      User             @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+  attempt      Int              @default(1)
+  text         String?
+  status       SubmissionStatus @default(DRAFT)
+  /// Set server-side at submit time; the client clock is never consulted.
+  submittedAt  DateTime?
+  isLate       Boolean          @default(false)
+  marksAwarded Int?
+  feedback     String?
+  gradedById   String?
+  gradedBy     User?            @relation("GradedSubmissions", fields: [gradedById], references: [id], onDelete: SetNull)
+  gradedAt     DateTime?
+  returnedAt   DateTime?
+  updatedAt    DateTime         @updatedAt
+  createdAt    DateTime         @default(now())
+
+  files StoredFile[]
+
+  /// One row per student per assignment — the database, not the client,
+  /// prevents duplicate submissions.
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId, status])
+  @@index([studentId])
+  @@map("submissions")
+}
+
+/// Metadata for a file on the local disk store. The disk name is a
+/// random key; `originalName` is display-only and never trusted as a path.
+model StoredFile {
+  id           String      @id @default(uuid())
+  ownerId      String
+  owner        User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  purpose      FilePurpose
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  diskKey      String      @unique
+  assignmentId String?
+  assignment   Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  submissionId String?
+  submission   Submission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime    @default(now())
+
+  @@index([ownerId])
+  @@index([assignmentId])
+  @@index([submissionId])
+  @@map("stored_files")
+}
+
+// ────────────────────────────────────────────────────────────
+//  Announcements + notifications
+// ────────────────────────────────────────────────────────────
+
+model Announcement {
+  id        String               @id @default(uuid())
+  courseId  String
+  course    Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?                @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  title     String
+  body      String
+  priority  AnnouncementPriority @default(NORMAL)
+  status    ContentStatus        @default(PUBLISHED)
+  publishAt DateTime?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@index([courseId, createdAt])
+  @@map("announcements")
+}
+
+/// One row per recipient. Fan-out happens at write time (a course
+/// announcement creates a row per enrolled student) so the unread
+/// count is a single indexed COUNT.
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }

@@ -45,6 +45,18 @@ export function formatTime(value: string | Date | null | undefined) {
   return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
+/** "Mon 25 Aug" — the compact stamp for session rows and history
+    lists; pass { time: true } for "Mon 25 Aug · 13:05". */
+export function formatDayDate(value: string | Date | null | undefined, opts?: { time?: boolean }) {
+  if (!value) return '—';
+  const date = typeof value === 'string' ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return '—';
+  const day = date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+  return opts?.time
+    ? `${day} · ${date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`
+    : day;
+}
+
 /** Compact counts for badges and dense tables. */
 export function compact(n: number) {
   return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(n);

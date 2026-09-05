@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
-import { IconAlert, IconCheckCircle, IconClose, IconInfo, IconOffline, IconRefresh } from '../icons';
+import { IconAlert, IconCheckCircle, IconClose, IconInfo, IconOffline, IconRefresh, IconWarning } from '../icons';
 import { Button, IconButton } from './primitives';
 
 /* ============================================================
@@ -65,15 +65,29 @@ export function SkeletonCards({ count = 3, height = 132 }: { count?: number; hei
 /* ============================================================
    Empty state — explanation plus the one action that resolves it
    ============================================================ */
-export function EmptyState({ icon, title, description, action, secondary, tight }: {
+export function EmptyState({ icon, title, description, action, secondary, tight, row, bare }: {
   icon?: ReactNode; title: string; description?: ReactNode;
   action?: ReactNode; secondary?: ReactNode; tight?: boolean;
+  /** Row-scale variant for rails and cards: a "no data" line should
+      never be taller than the data it replaces. */
+  row?: boolean;
+  /** No horizontal padding — for use directly under a section title. */
+  bare?: boolean;
 }) {
   return (
-    <div className={`empty ${tight ? 'empty-tight' : ''}`.trim()}>
+    <div className={`empty ${tight ? 'empty-tight' : ''} ${row ? 'empty-row' : ''} ${bare ? 'empty-bare' : ''}`.trim()}>
       {icon && <span className="empty-mark" aria-hidden="true">{icon}</span>}
-      <h4 className="empty-title">{title}</h4>
-      {description && <p className="empty-text">{description}</p>}
+      {row ? (
+        <span className="grow">
+          <span className="empty-title" style={{ display: 'block' }}>{title}</span>
+          {description && <span className="empty-text" style={{ display: 'block' }}>{description}</span>}
+        </span>
+      ) : (
+        <>
+          <h4 className="empty-title">{title}</h4>
+          {description && <p className="empty-text">{description}</p>}
+        </>
+      )}
       {(action || secondary) && <div className="empty-actions">{action}{secondary}</div>}
     </div>
   );
@@ -107,12 +121,12 @@ export function ErrorState({ title, description, onRetry, icon }: {
    Toast
    Confirmation for actions whose result is not visible on screen.
    ============================================================ */
-type ToastTone = 'success' | 'error' | 'info';
+type ToastTone = 'success' | 'error' | 'warning' | 'info';
 interface ToastItem { id: number; tone: ToastTone; title: string; description?: string }
 
 const ToastCtx = createContext<((t: Omit<ToastItem, 'id'>) => void) | null>(null);
 
-const TOAST_ICON = { success: IconCheckCircle, error: IconAlert, info: IconInfo } as const;
+const TOAST_ICON = { success: IconCheckCircle, error: IconAlert, warning: IconWarning, info: IconInfo } as const;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
@@ -143,7 +157,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 <div className="toast-title">{t.title}</div>
                 {t.description && <div className="toast-desc">{t.description}</div>}
               </div>
-              <IconButton label="Dismiss" onClick={() => dismiss(t.id)} style={{ width: 26, height: 26 }}>
+              <IconButton label="Dismiss" onClick={() => dismiss(t.id)} style={{ width: 24, height: 24 }}>
                 <IconClose size={14} />
               </IconButton>
             </div>
@@ -159,6 +173,7 @@ export function useToast() {
   return useMemo(() => ({
     success: (title: string, description?: string) => push?.({ tone: 'success', title, description }),
     error:   (title: string, description?: string) => push?.({ tone: 'error', title, description }),
+    warning: (title: string, description?: string) => push?.({ tone: 'warning', title, description }),
     info:    (title: string, description?: string) => push?.({ tone: 'info', title, description }),
   }), [push]);
 }

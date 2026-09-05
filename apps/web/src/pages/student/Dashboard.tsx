@@ -1,205 +1,316 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
-import { useAuth } from '../../lib/auth';
-import type { ClassSession, Course, StudentAnalytics } from '../../lib/types';
+import type {
+  Announcement, Assignment, ClassSession, ContinueItem, Course, Slot, StudentAnalytics,
+} from '../../lib/types';
 import { useLiveSession } from '../../features/session/LiveSessionContext';
 import {
-  Badge, Banner, Card, CardBody, CardHead, EmptyState, LinkButton,
-  Meter, PageHeader, PanelRow, Progress, Skeleton, Stat, StatGrid,
+  Badge, EmptyState, LinkButton, PageHeader, Progress, SectionHead, SimpleTable, Skeleton,
+  Stat, StatGrid,
 } from '../../components/ui';
-import {
-  IconArrowRight, IconBook, IconBroadcast, IconChart, IconChevronRight, IconClock, IconTarget,
-} from '../../components/icons';
-import { greeting, relativeTime } from '../../lib/format';
+import { IconArrowRight, IconAward2, IconBook, IconBroadcast, IconClipboard, IconClock, IconMessage, IconTarget, IconUserCheck } from '../../components/icons';
+import { formatDayDate, relativeTime } from '../../lib/format';
+import { dueLabel } from './Assignments';
+
+/** The sessions endpoint returns the full record; the shared type
+    omits its timestamps, so they are re-declared here. */
+type SessionRecord = ClassSession & { startedAt?: string | null; createdAt?: string };
+
+
+/** Today's timetable slots, in order; then the next one after now. */
+function todayAndNext(slots: Slot[] | undefined) {
+  if (!slots) return { today: [] as Slot[], next: null as Slot | null };
+  const now = new Date();
+  const dow = now.getDay();
+  const hm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const today = slots.filter((s) => s.dayOfWeek === dow).sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const next = today.find((s) => s.endTime > hm) ?? null;
+  return { today, next };
+}
 
 /* ============================================================
-   Student dashboard
-   Answers, in order: is something happening right now, what am
-   I enrolled in, and how am I actually doing.
+   Student overview
+   Answers, in order: is something live, what do I have today,
+   what is due, how am I doing, what am I enrolled in.
    ============================================================ */
 export default function StudentDashboard() {
-  const { user } = useAuth();
+  const navigate = useNavigate();
   const { session } = useLiveSession();
 
   const courses = useQuery({ queryKey: ['courses'], queryFn: () => api.get<Course[]>('/courses') });
   const sessions = useQuery({
     queryKey: ['sessions'],
-    queryFn: () => api.get<ClassSession[]>('/sessions'),
+    queryFn: () => api.get<SessionRecord[]>('/sessions'),
     refetchInterval: 60_000,
   });
   const analytics = useQuery({
     queryKey: ['analytics', 'me'],
     queryFn: () => api.get<StudentAnalytics>('/analytics/me'),
   });
+  const resume = useQuery({
+    queryKey: ['continue'],
+    queryFn: () => api.get<ContinueItem[]>('/me/continue?take=3'),
+  });
+  const assignments = useQuery({
+    queryKey: ['my-assignments'],
+    queryFn: () => api.get<Assignment[]>('/me/assignments'),
+  });
+  const feed = useQuery({
+    queryKey: ['my-announcements'],
+    queryFn: () => api.get<Announcement[]>('/me/announcements?take=4'),
+  });
+  const timetable = useQuery({
+    queryKey: ['timetable', 'me'],
+    queryFn: () => api.get<Slot[]>('/me/timetable'),
+  });
 
   const live = sessions.data?.filter((s) => s.status === 'LIVE') ?? [];
-  const recent = sessions.data?.filter((s) => s.status !== 'LIVE').slice(0, 5) ?? [];
+  const dueSoon = (assignments.data ?? [])
+    .filter((a) => !a.mySubmission?.submittedAt)
+    .sort((a, b) => a.dueAt.localeCompare(b.dueAt))
+    .slice(0, 5);
+  const recent = sessions.data?.filter((s) => s.status !== 'LIVE').slice(0, 6) ?? [];
   const k = analytics.data?.kpis;
-  const firstName = user?.name?.split(' ')[0] ?? 'there';
+  const { today, next } = todayAndNext(timetable.data);
+  const dateLabel = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
     <>
       <PageHeader
-        eyebrow={new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
-        title={`${greeting()}, ${firstName}`}
-        lede="Everything happening across your courses, and where your marks stand."
+        title="Overview"
+        lede={dateLabel}
         actions={
-          <LinkButton to="/student/live">
-            <IconBroadcast size={16} />{session ? 'Return to session' : 'Join a session'}
+          <LinkButton to="/student/live" size="lg" variant={session || live.length ? 'primary' : 'secondary'}>
+            <IconBroadcast size={15} />{session ? 'Return to session' : 'Join a session'}
           </LinkButton>
         }
       />
 
-      {/* ── What needs attention right now ───────────────── */}
-      {session ? (
-        <Banner
-          tone="success"
-          title="You are in a live session"
-          action={<LinkButton to="/student/live" size="sm" variant="secondary">Open<IconArrowRight size={14} /></LinkButton>}
-        >
-          {session.course?.name ?? session.title ?? 'Session'} · room {session.roomCode}
-        </Banner>
-      ) : live.length > 0 ? (
-        <Banner
-          tone="warning"
-          title={live.length === 1 ? 'A class is live right now' : `${live.length} classes are live right now`}
-          action={<LinkButton to="/student/live" size="sm" variant="secondary">Join<IconArrowRight size={14} /></LinkButton>}
-        >
-          {live.map((s) => s.course?.name ?? s.title).filter(Boolean).join(' · ')} — ask your teacher for the room code.
-        </Banner>
-      ) : null}
+      {/* ── Right now ─────────────────────────────────────── */}
+      {(session || live.length > 0) && (
+        <div className="now-strip">
+          <span className="now-dot" aria-hidden="true" />
+          <div className="grow">
+            <span className="now-title">
+              {session ? 'You are in a live session' : live.length === 1 ? 'A class is live now' : `${live.length} classes are live now`}
+            </span>
+            <span className="now-meta">
+              {session
+                ? `${session.course?.name ?? session.title ?? 'Session'} · room ${session.roomCode}`
+                : `${live.map((s) => s.course?.name ?? s.title).filter(Boolean).join(' · ')} — ask your teacher for the room code.`}
+            </span>
+          </div>
+          <LinkButton to="/student/live" size="sm" variant={session ? 'secondary' : 'primary'}>
+            {session ? 'Open' : 'Join now'}<IconArrowRight size={14} />
+          </LinkButton>
+        </div>
+      )}
 
-      {/* ── Standing ─────────────────────────────────────── */}
-      <div className="section">
-        {analytics.isLoading ? (
-          <Card><div className="card-body"><Skeleton h={72} className="sk-block" /></div></Card>
-        ) : (
-          <StatGrid>
-            <Stat
-              label="Answer accuracy"
-              value={k ? `${k.accuracy}%` : '—'}
-              foot={k ? `${k.questionsAnswered} questions answered` : 'No answers yet'}
-            />
-            <Stat
-              label="Attendance"
-              value={k ? `${k.attendanceRate}%` : '—'}
-              foot={k ? `${k.sessionsAttended} sessions attended` : 'No sessions yet'}
-            />
-            <Stat label="Marks earned" value={k?.marksEarned ?? '—'} foot="Across all courses" />
-            <Stat label="Courses" value={courses.data?.length ?? '—'} foot="Currently enrolled" />
-          </StatGrid>
-        )}
-      </div>
+      {/* ── KPIs ──────────────────────────────────────────── */}
+      {analytics.isLoading ? (
+        <Skeleton h={72} className="sk-block" />
+      ) : (
+        <StatGrid>
+          <Stat icon={<IconTarget size={16} />} tone={k && k.accuracy >= 70 ? 'success' : 'warning'} label="Answer accuracy" value={k ? `${k.accuracy}%` : '—'} foot={k ? `${k.questionsAnswered} answered` : 'No answers yet'} />
+          <Stat icon={<IconUserCheck size={16} />} tone="info" label="Attendance" value={k ? `${k.attendanceRate}%` : '—'} foot={k ? `${k.sessionsAttended} sessions` : 'No sessions yet'} />
+          <Stat icon={<IconAward2 size={16} />} tone="accent" label="Marks earned" value={k?.marksEarned ?? '—'} foot="All courses" />
+          <Stat icon={<IconClipboard size={16} />} tone={dueSoon.length ? 'danger' : 'neutral'} label="Due" value={assignments.data ? dueSoon.length : '—'} foot={dueSoon.length ? 'Not yet submitted' : 'Nothing outstanding'} />
+          <Stat icon={<IconBook size={16} />} label="Courses" value={courses.data?.length ?? '—'} foot="Enrolled" />
+        </StatGrid>
+      )}
 
       <div className="split section">
-        {/* ── Courses ───────────────────────────────────── */}
-        <Card>
-          <CardHead
-            title="Your courses"
-            sub="Attendance rate in each course you are enrolled in"
-            action={<Link to="/student/courses" className="section-link">View all<IconChevronRight size={13} /></Link>}
-          />
-          <CardBody>
+        <div>
+          {/* ── Today ─────────────────────────────────────── */}
+          <section>
+            <SectionHead
+              title="Today"
+              sub={next ? `Next: ${next.course?.code} at ${next.startTime}` : undefined}
+              action={<Link to="/student/timetable" className="section-link">Full schedule<IconArrowRight /></Link>}
+            />
+            {timetable.isLoading ? (
+              <Skeleton h={80} className="sk-block" />
+            ) : today.length === 0 ? (
+              <EmptyState row bare title="No classes scheduled today" description="Your timetable is clear. Anything live still appears above." />
+            ) : (
+              <SimpleTable
+                bare
+                rows={today}
+                getRowId={(s) => s.id}
+                onRowClick={(s) => navigate(`/student/courses/${s.courseId}`)}
+                columns={[
+                  { key: 'time', header: 'Time', width: 120, cell: (s) => <span className="cell-data">{s.startTime}–{s.endTime}</span> },
+                  { key: 'course', header: 'Course', cell: (s) => <span className="cell-primary">{s.course?.name ?? s.courseId}</span> },
+                  { key: 'code', header: 'Code', width: 96, cell: (s) => <span className="cell-data">{s.course?.code}</span> },
+                  { key: 'room', header: 'Room', width: 110, secondary: true, cell: (s) => s.room ?? <span className="cell-muted">—</span> },
+                  { key: 'status', header: '', width: 90, align: 'right', cell: (s) => (
+                    next?.id === s.id ? <Badge tone="accent">Next</Badge>
+                    : live.some((l) => l.courseId === s.courseId) ? <Badge tone="live">Live</Badge>
+                    : null
+                  ) },
+                ]}
+              />
+            )}
+          </section>
+
+          {/* ── Due soon ──────────────────────────────────── */}
+          <section className="section">
+            <SectionHead
+              title="Due soon"
+              action={<Link to="/student/assignments" className="section-link">All assignments<IconArrowRight /></Link>}
+            />
+            {assignments.isLoading ? (
+              <Skeleton h={80} className="sk-block" />
+            ) : dueSoon.length === 0 ? (
+              <EmptyState row bare title="Nothing outstanding" description="Every published assignment is handed in." />
+            ) : (
+              <SimpleTable
+                bare
+                rows={dueSoon}
+                getRowId={(a) => a.id}
+                onRowClick={(a) => navigate(`/student/assignments/${a.id}`)}
+                columns={[
+                  { key: 'title', header: 'Assignment', cell: (a) => <Link to={`/student/assignments/${a.id}`} className="cell-primary t-clamp-1">{a.title}</Link> },
+                  { key: 'course', header: 'Course', width: 96, cell: (a) => <span className="cell-data">{a.course?.code}</span> },
+                  { key: 'due', header: 'Due', width: 150, cell: (a) => (
+                    <span style={{ color: new Date(a.dueAt) < new Date() ? 'var(--danger)' : undefined }}>{dueLabel(a.dueAt)}</span>
+                  ) },
+                  { key: 'marks', header: 'Marks', width: 72, align: 'right', cell: (a) => a.maxMarks },
+                ]}
+              />
+            )}
+          </section>
+
+          {/* ── Courses ───────────────────────────────────── */}
+          <section className="section">
+            <SectionHead
+              title="My courses"
+              action={<Link to="/student/courses" className="section-link">View all<IconArrowRight /></Link>}
+            />
             {courses.isLoading ? (
-              <>
-                <Skeleton className="sk-line" h={38} />
-                <Skeleton className="sk-line" h={38} />
-                <Skeleton className="sk-line" h={38} />
-              </>
+              <Skeleton h={100} className="sk-block" />
             ) : !courses.data?.length ? (
               <EmptyState
-                tight
-                icon={<IconBook size={20} />}
+                row bare
                 title="No courses yet"
-                description="Your courses appear here once an administrator enrols you. Ask them to add you, or check back after registration closes."
+                description="Courses appear here once an administrator enrols you."
               />
             ) : (
-              analytics.data?.perCourse.length ? (
-                analytics.data.perCourse.map((c) => (
-                  <Meter key={c.course} label={c.course} sub={c.name} value={c.rate} />
-                ))
-              ) : (
-                courses.data.slice(0, 5).map((c) => (
-                  <Meter key={c.id} label={c.code} sub={c.name} value={0} tone="foundation" />
-                ))
-              )
+              <SimpleTable
+                bare
+                rows={courses.data.slice(0, 6)}
+                getRowId={(c) => c.id}
+                onRowClick={(c) => navigate(`/student/courses/${c.id}`)}
+                columns={[
+                  { key: 'code', header: 'Code', width: 96, cell: (c) => <span className="cell-data">{c.code}</span> },
+                  { key: 'name', header: 'Course', cell: (c) => <span className="cell-primary">{c.name}</span> },
+                  { key: 'teacher', header: 'Teacher', width: 160, secondary: true, cell: (c) => c.teacher?.name ?? <span className="cell-muted">Unassigned</span> },
+                  { key: 'att', header: 'Attendance', width: 180, cell: (c) => {
+                    const pc = analytics.data?.perCourse.find((x) => x.course === c.code);
+                    return pc ? (
+                      <span className="cell-progress">
+                        <Progress value={pc.rate} tone={pc.rate >= 75 ? 'success' : pc.rate >= 45 ? 'warning' : 'danger'} label={`${c.code} attendance`} />
+                        <span className="t-num">{pc.rate}%</span>
+                      </span>
+                    ) : <span className="cell-muted">No sessions yet</span>;
+                  } },
+                ]}
+              />
             )}
-          </CardBody>
-        </Card>
+          </section>
+        </div>
 
-        {/* ── Recent activity ───────────────────────────── */}
-        <div className="stack">
-          <Card>
-            <CardHead title="Recent sessions" sub="The last classes across your courses" />
-            {sessions.isLoading ? (
-              <div className="card-body"><Skeleton h={60} className="sk-block" /></div>
-            ) : !recent.length ? (
-              <EmptyState
-                tight
-                icon={<IconClock size={20} />}
-                title="Nothing yet"
-                description="Sessions you attend will be listed here."
-              />
-            ) : (
-              <div>
-                {recent.map((s) => (
-                  <PanelRow key={s.id}>
-                    <div className="grow" style={{ minWidth: 0 }}>
-                      <div className="record-title t-clamp-1">{s.course?.name ?? s.title ?? 'Session'}</div>
-                      <div className="record-meta">
-                        {s.course?.code} · {s._count?.questions ?? 0} questions
-                      </div>
-                    </div>
-                    <Badge tone={s.status === 'CLOSED' ? 'neutral' : 'info'}>
-                      {s.status === 'CLOSED' ? 'Finished' : 'Scheduled'}
-                    </Badge>
-                  </PanelRow>
+        {/* ── Rail ──────────────────────────────────────────── */}
+        <div>
+          {resume.data && resume.data.length > 0 && (
+            <section>
+              <SectionHead title="Continue" />
+              <ul className="resume-list">
+                {resume.data.map((r) => (
+                  <li key={r.id}>
+                    <Link to={`/student/learn/${r.lesson.module.course.id}/${r.lesson.id}`} className="resume-row">
+                      <span className="resume-row-main">
+                        <span className="resume-row-title t-clamp-1">{r.lesson.title}</span>
+                        <span className="resume-row-meta t-clamp-1">
+                          <span className="t-data">{r.lesson.module.course.code}</span> · {r.lesson.module.title}
+                        </span>
+                        <Progress value={r.percent} size="sm" label={`${r.lesson.title} progress`} />
+                      </span>
+                      <span className="resume-row-pct t-num">{r.percent}%</span>
+                    </Link>
+                  </li>
                 ))}
-              </div>
-            )}
-          </Card>
+              </ul>
+            </section>
+          )}
 
-          <Card>
-            <CardHead title="Where to focus" sub="Based on your answer history" />
-            <CardBody>
-              {!k || k.questionsAnswered === 0 ? (
-                <EmptyState
-                  tight
-                  icon={<IconTarget size={20} />}
-                  title="Not enough data yet"
-                  description="Answer a few questions in a live session and we will show you which courses need attention."
-                  action={<LinkButton to="/student/live" size="sm" variant="secondary">Join a session</LinkButton>}
-                />
-              ) : (
-                <div className="col">
-                  <div>
-                    <div className="row-between" style={{ marginBottom: 'var(--s-2)' }}>
-                      <span className="t-sm">Accuracy against a 70% target</span>
-                      <span className="t-xs t-num t-muted">{k.accuracy}% / 70%</span>
-                    </div>
-                    <Progress value={(k.accuracy / 70) * 100} tone={k.accuracy >= 70 ? 'success' : 'warning'} />
-                  </div>
-                  <p className="t-sm t-secondary">
-                    {k.accuracy >= 70
-                      ? 'You are comfortably above target. Keep attending — attendance is the larger part of your record.'
-                      : `You are ${70 - k.accuracy} points below target. Reviewing the explanations shown after each question is the fastest way to close that.`}
-                  </p>
-                  <LinkButton to="/student/progress" variant="secondary" size="sm" style={{ alignSelf: 'flex-start' }}>
-                    <IconChart size={14} />See full breakdown
-                  </LinkButton>
-                </div>
-              )}
-            </CardBody>
-          </Card>
+          <section className={resume.data?.length ? 'section' : undefined}>
+            <SectionHead title="Announcements" />
+            {feed.isLoading ? (
+              <Skeleton h={60} className="sk-block" />
+            ) : !feed.data?.length ? (
+              <EmptyState row bare title="No announcements" description="Course news from your teachers lands here." />
+            ) : (
+              <ul className="feed-list">
+                {feed.data.map((a) => (
+                  <li key={a.id}>
+                    <Link to={`/student/courses/${a.courseId}`} className="feed-row">
+                      <span className="feed-row-icon tone-warning"><IconMessage size={14} /></span>
+                      <span className="feed-row-main">
+                      <span className="feed-row-title t-clamp-1">
+                        {a.priority === 'IMPORTANT' && <Badge tone="warning">Important</Badge>}
+                        {a.title}
+                      </span>
+                      <span className="feed-row-meta"><span className="t-data">{a.course?.code}</span> · {relativeTime(a.createdAt)}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="section">
+            <SectionHead title="Recent sessions" />
+            {sessions.isLoading ? (
+              <Skeleton h={60} className="sk-block" />
+            ) : !recent.length ? (
+              <EmptyState row bare title="Nothing yet" description="Sessions you attend will be listed here." />
+            ) : (
+              <ul className="feed-list">
+                {recent.map((s) => (
+                  <li key={s.id} className="feed-row">
+                    <span className="feed-row-icon"><IconClock size={14} /></span>
+                    <span className="feed-row-main">
+                      <span className="feed-row-title t-clamp-1">{s.title ?? s.course?.name ?? 'Session'}</span>
+                      <span className="feed-row-meta">
+                        <span className="t-data">{s.course?.code}</span> · {formatDayDate(s.startedAt ?? s.createdAt)} · {s._count?.questions ?? 0} questions
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {k && k.questionsAnswered > 0 && (
+            <section className="section">
+              <SectionHead title="Standing" />
+              <dl className="kv">
+                <div><dt>Answer accuracy</dt><dd style={{ color: k.accuracy >= 70 ? 'var(--success)' : 'var(--warning)' }}>{k.accuracy}%</dd></div>
+                <div><dt>Target</dt><dd>70%</dd></div>
+                <div><dt>Attendance</dt><dd>{k.attendanceRate}%</dd></div>
+              </dl>
+              <p className="t-caption t-muted" style={{ marginTop: 'var(--s-3)' }}>
+                {k.accuracy >= 70
+                  ? 'Above target. Attendance is the larger part of your record, so keep attending.'
+                  : `${70 - k.accuracy} points below target. Reviewing the explanation after each question is the fastest way to close that.`}
+              </p>
+            </section>
+          )}
         </div>
       </div>
-
-      {recent.length > 0 && (
-        <p className="t-caption t-muted" style={{ marginTop: 'var(--s-6)' }}>
-          Last updated {relativeTime(new Date())}
-        </p>
-      )}
     </>
   );
 }

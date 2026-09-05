@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
+import { downloadCsv } from '../../lib/csv';
 import type { ApprovalStatus, Role, User } from '../../lib/types';
 import {
-  Avatar, Badge, Banner, Button, Card, CardHead, ConfirmDialog, DataTable, Drawer,
-  EmptyState, Menu, MenuItem, MenuSep, PageHeader, Segmented, Stat, StatGrid,
+  Avatar, Badge, Banner, Button, ConfirmDialog, DataTable, Drawer,
+  EmptyState, Menu, MenuItem, MenuSep, PageHeader, Segmented,
   useToast, type Column,
 } from '../../components/ui';
 import {
-  IconCheck, IconClose, IconMail, IconMore, IconTrash, IconUser, IconUsers,
+  IconCheck, IconClose, IconMore, IconTrash, IconUser, IconUsers,
 } from '../../components/icons';
 import { formatDate, relativeTime } from '../../lib/format';
 
@@ -21,6 +22,8 @@ import { formatDate, relativeTime } from '../../lib/format';
 
 const ROLE_TONE = { STUDENT: 'info', TEACHER: 'accent', ADMIN: 'solid' } as const;
 const STATUS_TONE = { APPROVED: 'success', PENDING: 'warning', REJECTED: 'danger' } as const;
+
+function titleCase(s: string) { return s[0] + s.slice(1).toLowerCase(); }
 
 export default function AdminUsers() {
   const qc = useQueryClient();
@@ -90,25 +93,25 @@ export default function AdminUsers() {
       ),
     },
     {
-      key: 'role', header: 'Role', width: '120px', sortValue: (u) => u.role,
-      cell: (u) => <Badge tone={ROLE_TONE[u.role]}>{u.role[0] + u.role.slice(1).toLowerCase()}</Badge>,
+      key: 'role', header: 'Role', width: 110, sortValue: (u) => u.role,
+      cell: (u) => <Badge tone={ROLE_TONE[u.role]}>{titleCase(u.role)}</Badge>,
     },
     {
-      key: 'status', header: 'Status', width: '130px', sortValue: (u) => u.approvalStatus ?? '',
+      key: 'status', header: 'Status', width: 120, sortValue: (u) => u.approvalStatus ?? '',
       cell: (u) => u.approvalStatus
-        ? <Badge tone={STATUS_TONE[u.approvalStatus]} dot>{u.approvalStatus[0] + u.approvalStatus.slice(1).toLowerCase()}</Badge>
-        : <span className="t-muted">—</span>,
+        ? <Badge tone={STATUS_TONE[u.approvalStatus]} dot>{titleCase(u.approvalStatus)}</Badge>
+        : <span className="cell-muted">—</span>,
     },
     {
-      key: 'department', header: 'Department', sortValue: (u) => u.department ?? '',
-      cell: (u) => u.department ?? <span className="t-muted">Not set</span>,
+      key: 'department', header: 'Department', sortValue: (u) => u.department ?? '', secondary: true,
+      cell: (u) => u.department ?? <span className="cell-muted">Not set</span>,
     },
     {
-      key: 'joined', header: 'Joined', width: '140px', sortValue: (u) => u.createdAt ?? '',
-      cell: (u) => <span className="t-muted">{relativeTime(u.createdAt)}</span>,
+      key: 'joined', header: 'Joined', width: 130, sortValue: (u) => u.createdAt ?? '',
+      cell: (u) => <span className="cell-muted" title={formatDate(u.createdAt)}>{relativeTime(u.createdAt)}</span>,
     },
     {
-      key: 'actions', header: <span className="sr-only">Actions</span>, align: 'right', width: '64px',
+      key: 'actions', header: <span className="sr-only">Actions</span>, align: 'right', width: 56,
       cell: (u) => (
         <Menu label={`Actions for ${u.name}`} trigger={<IconMore size={16} />}>
           {(close) => (
@@ -137,110 +140,125 @@ export default function AdminUsers() {
     },
   ];
 
+  const summary = users.isError
+    ? 'Could not load accounts.'
+    : users.isLoading
+      ? 'Loading accounts…'
+      : `${rows.length} ${rows.length === 1 ? 'account' : 'accounts'} · ${counts.students} students · ${counts.teachers} teachers${counts.pending ? ` · ${counts.pending} pending review` : ''}`;
+
   return (
     <>
       <PageHeader
-        eyebrow="Management"
         title="People"
-        lede="Every account on the platform. Approve teachers, review details and remove accounts."
+        lede={summary}
+        actions={
+          <Button
+            variant="secondary"
+            disabled={!rows.length}
+            onClick={() =>
+              downloadCsv('sessionhub-accounts.csv', [
+                ['Name', 'Email', 'Role', 'Status', 'Department', 'Joined'],
+                ...rows.map((u) => [
+                  u.name,
+                  u.email,
+                  u.role,
+                  u.approvalStatus ?? '',
+                  u.department ?? '',
+                  u.createdAt ? u.createdAt.slice(0, 10) : '',
+                ]),
+              ])
+            }
+          >
+            Export CSV
+          </Button>
+        }
       />
 
       {capped && (
         <Banner tone="info" title="Showing the first 200 accounts">
-          This view is capped by the server. Narrow it with the role or status filters to be
-          certain you are seeing everyone you are looking for.
+          Narrow the list with the role or status filters to be certain you are seeing everyone.
         </Banner>
       )}
 
-      <StatGrid>
-        <Stat label="Accounts shown" value={rows.length} foot="Matching the current filter" />
-        <Stat label="Students" value={counts.students} foot="In this view" />
-        <Stat label="Teachers" value={counts.teachers} foot="In this view" />
-        <Stat label="Pending review" value={counts.pending} foot={counts.pending ? 'Cannot sign in yet' : 'All reviewed'} />
-      </StatGrid>
-
-      <div className="section">
-        <Card className="card-flush">
-          <CardHead title="All accounts" sub="Search, filter and act on any account" />
-          <DataTable
-            rows={rows}
-            columns={columns}
-            getRowId={(u) => u.id}
-            loading={users.isLoading}
-            error={users.isError || undefined}
-            onRetry={() => void users.refetch()}
-            caption="Platform accounts"
-            search={{ placeholder: 'Search name, email or department', match: (u) => `${u.name} ${u.email} ${u.department ?? ''}` }}
-            toolbar={
-              <>
-                <Segmented
-                  label="Filter by role"
-                  value={role}
-                  onChange={setRole}
-                  options={[
-                    { value: 'ALL', label: 'All' },
-                    { value: 'STUDENT', label: 'Students' },
-                    { value: 'TEACHER', label: 'Teachers' },
-                    { value: 'ADMIN', label: 'Admins' },
-                  ]}
-                />
-                <Segmented
-                  label="Filter by status"
-                  value={status}
-                  onChange={setStatus}
-                  options={[
-                    { value: 'ALL', label: 'Any status' },
-                    { value: 'APPROVED', label: 'Approved' },
-                    { value: 'PENDING', label: 'Pending' },
-                  ]}
-                />
-              </>
-            }
-            selectable
-            bulkActions={(ids, clear) => (
-              <>
-                <Button
-                  size="xs"
-                  onClick={() => {
-                    ids.forEach((id) => setApproval.mutate({ id, approvalStatus: 'APPROVED' }));
-                    clear();
-                  }}
-                >
-                  <IconCheck size={13} />Approve
-                </Button>
-                <Button
-                  size="xs"
-                  variant="danger"
-                  onClick={() => {
-                    ids.forEach((id) => setApproval.mutate({ id, approvalStatus: 'REJECTED' }));
-                    clear();
-                  }}
-                >
-                  <IconClose size={13} />Reject
-                </Button>
-              </>
-            )}
-            pageSize={12}
-            mobileCard={(u) => (
-              <button type="button" className="record" style={{ width: '100%', textAlign: 'left' }} onClick={() => setDetail(u)}>
-                <Avatar name={u.name} size="sm" />
-                <div className="record-main">
-                  <div className="record-title">{u.name}</div>
-                  <div className="record-meta">{u.email}</div>
-                </div>
-                <Badge tone={ROLE_TONE[u.role]}>{u.role[0] + u.role.slice(1).toLowerCase()}</Badge>
-              </button>
-            )}
-            empty={
-              <EmptyState
-                icon={<IconUsers size={20} />}
-                title="No accounts match these filters"
-                description="Try a different role or status — or clear the filters to see everyone on the platform."
-                action={<Button size="sm" variant="secondary" onClick={() => { setRole('ALL'); setStatus('ALL'); }}>Clear filters</Button>}
+      <div className="table-frame">
+        <DataTable
+          rows={rows}
+          columns={columns}
+          getRowId={(u) => u.id}
+          loading={users.isLoading}
+          error={users.isError || undefined}
+          onRetry={() => void users.refetch()}
+          caption="Platform accounts"
+          search={{ placeholder: 'Search name, email or department', match: (u) => `${u.name} ${u.email} ${u.department ?? ''}` }}
+          toolbar={
+            <>
+              <Segmented
+                label="Filter by role"
+                value={role}
+                onChange={setRole}
+                options={[
+                  { value: 'ALL', label: 'All' },
+                  { value: 'STUDENT', label: 'Students' },
+                  { value: 'TEACHER', label: 'Teachers' },
+                  { value: 'ADMIN', label: 'Admins' },
+                ]}
               />
-            }
-          />
-        </Card>
+              <Segmented
+                label="Filter by status"
+                value={status}
+                onChange={setStatus}
+                options={[
+                  { value: 'ALL', label: 'Any status' },
+                  { value: 'APPROVED', label: 'Approved' },
+                  { value: 'PENDING', label: 'Pending' },
+                ]}
+              />
+            </>
+          }
+          selectable
+          bulkActions={(ids, clear) => (
+            <>
+              <Button
+                size="xs"
+                onClick={() => {
+                  ids.forEach((id) => setApproval.mutate({ id, approvalStatus: 'APPROVED' }));
+                  clear();
+                }}
+              >
+                <IconCheck size={13} />Approve
+              </Button>
+              <Button
+                size="xs"
+                variant="danger"
+                onClick={() => {
+                  ids.forEach((id) => setApproval.mutate({ id, approvalStatus: 'REJECTED' }));
+                  clear();
+                }}
+              >
+                <IconClose size={13} />Reject
+              </Button>
+            </>
+          )}
+          pageSize={15}
+          mobileCard={(u) => (
+            <button type="button" className="record" style={{ width: '100%', textAlign: 'left' }} onClick={() => setDetail(u)}>
+              <Avatar name={u.name} size="sm" />
+              <div className="record-main">
+                <div className="record-title">{u.name}</div>
+                <div className="record-meta">{u.email}</div>
+              </div>
+              <Badge tone={ROLE_TONE[u.role]}>{titleCase(u.role)}</Badge>
+            </button>
+          )}
+          empty={
+            <EmptyState
+              icon={<IconUsers size={18} />}
+              title="No accounts match these filters"
+              description="Try a different role or status, or clear the filters to see everyone on the platform."
+              action={<Button size="sm" variant="secondary" onClick={() => { setRole('ALL'); setStatus('ALL'); }}>Clear filters</Button>}
+            />
+          }
+        />
       </div>
 
       {/* ── Detail drawer ─────────────────────────────── */}
@@ -267,27 +285,27 @@ export default function AdminUsers() {
         {detail && (
           <>
             <div className="drawer-identity">
-              <Avatar name={detail.name} size="xl" />
+              <Avatar name={detail.name} size="lg" />
               <div>
-                <h3>{detail.name}</h3>
-                <p className="row-tight t-sm"><IconMail size={14} />{detail.email}</p>
+                <div className="t-sm" style={{ fontWeight: 500, color: 'var(--text)' }}>{detail.name}</div>
+                <div className="t-caption t-muted">{detail.email}</div>
               </div>
             </div>
 
-            <dl className="detail-list">
-              <div><dt>Role</dt><dd><Badge tone={ROLE_TONE[detail.role]}>{detail.role[0] + detail.role.slice(1).toLowerCase()}</Badge></dd></div>
+            <dl className="kv">
+              <div><dt>Role</dt><dd><Badge tone={ROLE_TONE[detail.role]}>{titleCase(detail.role)}</Badge></dd></div>
               <div>
                 <dt>Status</dt>
                 <dd>
                   {detail.approvalStatus
-                    ? <Badge tone={STATUS_TONE[detail.approvalStatus]} dot>{detail.approvalStatus[0] + detail.approvalStatus.slice(1).toLowerCase()}</Badge>
+                    ? <Badge tone={STATUS_TONE[detail.approvalStatus]} dot>{titleCase(detail.approvalStatus)}</Badge>
                     : '—'}
                 </dd>
               </div>
               <div><dt>Department</dt><dd>{detail.department ?? 'Not set'}</dd></div>
               <div><dt>Year</dt><dd>{detail.year ? `Year ${detail.year}` : '—'}</dd></div>
               <div><dt>Joined</dt><dd>{formatDate(detail.createdAt)}</dd></div>
-              <div><dt>Account ID</dt><dd className="mono t-caption">{detail.id}</dd></div>
+              <div><dt>Account ID</dt><dd className="t-data" style={{ fontWeight: 400 }}>{detail.id}</dd></div>
             </dl>
 
             <div className="drawer-danger">

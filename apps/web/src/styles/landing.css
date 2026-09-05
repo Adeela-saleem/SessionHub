@@ -20,13 +20,13 @@
   --ls-rule:    color-mix(in srgb, var(--navy-900) 10%, transparent);
   --ls-gutter:  clamp(20px, 4vw, 56px);
   --ls-max:     1440px;
-  --ls-section: clamp(80px, 8vw, 144px);
+  --ls-section: clamp(64px, 5.5vw, 96px);
 
-  --ls-display: clamp(2.5rem, 1.5rem + 3.9vw, 4.25rem);   /* 40 → 68 */
-  --ls-h2:      clamp(2rem,    1.28rem + 2.9vw, 3.5rem);  /* 32 → 56 */
-  --ls-h3:      clamp(1.375rem, 1.2rem + 0.7vw, 1.75rem); /* 22 → 28 */
-  --ls-body:    clamp(1rem,    0.96rem + 0.2vw, 1.125rem);/* 16 → 18 */
-  --ls-small:   0.9375rem;                                /* 15 */
+  --ls-display: clamp(2.25rem, 1.4rem + 3vw, 3.5rem);     /* 36 → 56 */
+  --ls-h2:      clamp(1.75rem, 1.2rem + 2vw, 2.75rem);    /* 28 → 44 */
+  --ls-h3:      clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);   /* 20 → 24 */
+  --ls-body:    clamp(0.9375rem, 0.9rem + 0.2vw, 1.0625rem);/* 15 → 17 */
+  --ls-small:   0.875rem;                                 /* 14 */
   --ls-meta:    0.75rem;                                  /* 12 */
 
   background: var(--ls-ground);
@@ -53,12 +53,15 @@
 }
 .ls h2 {
   font-size: var(--ls-h2);
-  line-height: 1.02;
-  letter-spacing: -0.035em;
+  line-height: 1.1;
+  letter-spacing: -0.028em;
   font-weight: 600;
-  max-width: 16ch;
+  max-width: 18ch;
 }
+/* Sub-headings stay in the interface family: at this size the serif
+   reads as decoration rather than voice. */
 .ls h3 {
+  font-family: var(--font);
   font-size: var(--ls-h3);
   line-height: 1.16;
   letter-spacing: -0.022em;
@@ -75,20 +78,20 @@
 .ls-marker {
   display: inline-flex;
   align-items: center;
-  gap: var(--s-3);
+  gap: 10px;
   font-size: 0.6875rem;
-  font-weight: 500;
-  line-height: 1.2;
-  letter-spacing: 0.14em;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--ls-ink-2);
-  margin-bottom: var(--s-4);
+  margin-bottom: var(--s-5);
 }
 /* Yellow introduces the page once, in the hero. The chapter markers
    that follow use the same shape in a neutral tone, so the accent stays
    a signature rather than a texture repeated down the page. */
-.ls-marker i { width: 16px; height: 1.5px; background: var(--border-strong); border-radius: 2px; }
-.ls-hero-copy .ls-marker i { background: var(--accent); }
+.ls-marker i { width: 14px; height: 2px; background: var(--border-strong); border-radius: 1px; }
+.ls-hero-copy .ls-marker i { background: var(--accent); box-shadow: 0 0 0 0.5px rgb(7 26 51 / 0.08); }
 /* The number is an index, not a headline: monospace, quiet, smaller. */
 .ls-marker em {
   font-family: var(--font-mono);
@@ -101,15 +104,18 @@
 
 .ls-textlink {
   display: inline-flex; align-items: center; gap: 6px;
-  font-size: var(--fs-sm); font-weight: var(--fw-medium);
+  font-size: 0.9375rem; font-weight: 500;
+  letter-spacing: -0.006em;
   color: var(--ls-ink);
-  padding-bottom: 2px;
-  border-bottom: 1px solid var(--ls-rule);
-  transition: border-color var(--t-base) var(--ease), gap var(--t-base) var(--ease);
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 5px;
+  transition: text-decoration-color var(--t-base) var(--ease);
 }
-.ls-textlink:hover { border-bottom-color: var(--accent); gap: 10px; }
+.ls-textlink:hover { text-decoration-color: var(--ls-ink); }
 
-.ls-section-head { margin-bottom: clamp(var(--s-7), 4vw, var(--s-9)); }
+.ls-section-head { margin-bottom: clamp(var(--s-6), 3vw, var(--s-8)); }
 
 /* ============================================================
    NAVIGATION
@@ -125,18 +131,19 @@
     border-color var(--t-slow) var(--ease);
 }
 .ls-nav.is-scrolled {
-  background: color-mix(in srgb, var(--ls-ground) 78%, transparent);
+  background: color-mix(in srgb, var(--ls-ground) 82%, transparent);
   backdrop-filter: saturate(180%) blur(14px);
   border-bottom-color: var(--ls-rule);
+  box-shadow: 0 1px 8px -4px rgb(7 26 51 / 0.08);
 }
 .ls-nav-inner {
   display: flex; align-items: center; gap: var(--s-9);
-  height: 72px;
+  height: 60px;
 }
 
 .ls-logo {
   display: inline-flex; align-items: center; gap: var(--s-3);
-  font-family: var(--font-display);
+  font-family: var(--font);
   font-size: 1.0625rem; font-weight: 600;
   letter-spacing: -0.025em; color: var(--ls-ink);
   flex: none;
@@ -145,22 +152,35 @@
   display: grid; place-items: center;
   width: 26px; height: 26px;
   border-radius: 6px;
-  background: var(--navy-900); color: var(--accent);
+  background: light-dark(var(--navy-900), var(--accent));
+  color: light-dark(var(--accent), var(--navy-900));
   font-size: 0.8125rem; font-weight: var(--fw-bold);
   letter-spacing: -0.04em;
 }
-:root[data-theme='dark'] .ls-logo-mark { background: var(--accent); color: var(--navy-900); }
+
 
 .ls-nav-links { display: flex; gap: var(--s-7); flex: 1; }
 .ls-nav-links a {
   position: relative;
-  font-size: var(--ls-small);
-  font-weight: 450;
-  letter-spacing: -0.006em;
-  color: var(--ls-ink-3);
-  padding-block: 4px;
-  transition: color var(--t-base) var(--ease);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: -0.004em;
+  color: var(--ls-ink-2);
+  padding: 6px 2px;
+  transition: color var(--t-fast) var(--ease);
 }
+.ls-nav-links a::after {
+  content: '';
+  position: absolute;
+  left: 2px; right: 2px; bottom: 0;
+  height: 1.5px;
+  border-radius: 1px;
+  background: var(--ls-ink);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 220ms var(--ease-out-soft);
+}
+.ls-nav-links a:hover::after { transform: scaleX(1); }
 .ls-nav-links a:hover { color: var(--ls-ink); }
 
 .ls-nav-actions { display: flex; align-items: center; gap: var(--s-2); flex: none; }
@@ -197,46 +217,53 @@
    HERO
    ============================================================ */
 .ls-hero {
-  padding-top: clamp(var(--s-6), 2.4vw, 36px);
+  /* Kept tight: the copy block above the product frame is short on
+     purpose, so the frame's chrome and room-code banner clear the
+     fold on a 900px-tall display. */
+  padding-top: clamp(var(--s-5), 1.6vw, 24px);
   position: relative;
-  background: linear-gradient(180deg,
-    var(--ls-ground) 0%,
-    color-mix(in srgb, var(--navy-900) 2%, var(--ls-ground)) 100%);
+  /* Lit from the top: a broad, faint highlight above the headline,
+     cooling toward the product. Felt, not seen. */
+  background:
+    radial-gradient(90rem 32rem at 50% -12rem, rgb(255 255 255 / 0.85), transparent 60%),
+    linear-gradient(180deg,
+      var(--ls-ground) 0%,
+      color-mix(in srgb, var(--navy-900) 3%, var(--ls-ground)) 100%);
+}
+:root[data-theme='dark'] .ls-hero {
+  background:
+    radial-gradient(90rem 32rem at 50% -12rem, rgb(124 156 200 / 0.06), transparent 60%),
+    var(--ls-ground);
 }
 
 .ls-hero-top {
-  display: grid;
-    grid-template-columns: minmax(0, 1fr);
-  /* The index sits with the eyebrow, not adrift beside the buttons. */
-  align-items: start;
-  padding-bottom: clamp(var(--s-6), 2.4vw, 40px);
+  padding-bottom: clamp(var(--s-5), 1.6vw, 28px);
 }
+.ls-hero-copy .ls-marker { margin-bottom: var(--s-4); }
 .ls-hero-copy .reveal-words {
   font-size: var(--ls-display);
-  line-height: 0.96;
-  letter-spacing: -0.045em;
+  line-height: 1.06;
+  letter-spacing: -0.032em;
   font-weight: 600;
-  max-width: 13ch;
-  margin-bottom: var(--s-4);
+  max-width: 14ch;
+  margin-bottom: var(--s-3);
 }
 .ls-hero-cta {
   display: flex; align-items: center; gap: var(--s-6);
   flex-wrap: wrap;
-  margin-top: var(--s-6);
+  margin-top: var(--s-5);
 }
 
-/* An index of what the platform covers — three phrases, no rules. */
 /* The product breaks out of the text column and keeps going. */
 .ls-hero-stage {
   --scroll: 0;
   position: relative;
   width: 100%;
-  /* The single intentional break in the grid: the product runs about
-     4% wider than the editorial column, so it reads as larger than the
-     page that contains it. Everything else stays on the 56px line. */
-  max-width: calc(var(--ls-max) + 96px);
+  /* On the same grid as everything else. A 24px offset does not read
+     as a decision at this scale — it reads as a mistake. */
+  max-width: var(--ls-max);
   margin-inline: auto;
-  padding: 0 clamp(16px, 2.2vw, 32px) var(--ls-section);
+  padding: 0 var(--ls-gutter) var(--ls-section);
   overflow-x: clip;
 }
 /* The ground the product stands on: an imperceptible cooling of the
@@ -262,11 +289,12 @@
     transparent 0%, var(--ls-rule) 16%, var(--ls-rule) 84%, transparent 100%);
   pointer-events: none;
 }
-.ls-hero-frame, .ls-hero-phone { z-index: 1; }
 
 .ls-hero-frame {
   position: relative;
   margin-inline: auto;
+  max-width: 1180px;
+  border-radius: var(--r-2xl);
   animation: hero-in 700ms var(--ease-out-soft) 200ms both;
 }
 .ls-hero-frame > .pf {
@@ -278,98 +306,212 @@
   to   { opacity: 1; transform: none; }
 }
 
-.ls-hero-phone {
-  position: absolute;
-  width: 208px;
-  /* Overlaps the frame's quiet right edge. The left of the screen —
-     identity, navigation, room code, metrics — stays uncovered. */
-  right: calc(var(--ls-gutter) * -0.45);
-  bottom: -64px;
-  z-index: 2;
-  transform: translateY(calc(var(--scroll) * -38px));
-  animation: hero-in 700ms var(--ease-out-soft) 460ms both;
-  will-change: transform;
-}
 
 /* ============================================================
-   01 — HOW IT WORKS
-   The one place horizontal rules earn their keep: a list.
+   01 — HOW A SESSION RUNS
+   A rail of steps on the left, the interface fragment they
+   describe on the right. The rail fills as the selection moves
+   down it, so progress through the sequence is visible.
    ============================================================ */
-.ls-story { padding-block: var(--ls-section); }
-.ls-story-grid {
+.ls-process { padding-block: var(--ls-section); }
+.ls-process-head { margin-bottom: clamp(var(--s-6), 3vw, var(--s-8)); }
+
+.ls-process-body {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-  gap: clamp(var(--s-7), 6vw, var(--s-10));
-  align-items: start;
+  gap: clamp(var(--s-7), 5vw, var(--s-10));
+  align-items: center;
 }
-.ls-story-head { position: sticky; top: 128px; }
 
-.ls-story-list { display: flex; flex-direction: column; }
-.ls-story-list li {
+.ls-steps { display: flex; flex-direction: column; }
+
+.ls-step {
+  position: relative;
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  gap: var(--s-5);
-  padding: var(--s-6) 0;
-  border-top: 1px solid var(--ls-rule);
-}
-.ls-story-list li:last-child { border-bottom: 1px solid var(--ls-rule); }
-.ls-story-n {
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  letter-spacing: 0.04em;
-  padding-top: 6px;
+  grid-template-columns: 20px 34px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--s-4);
+  padding: var(--s-4) 0 var(--s-4) var(--s-2);
+  text-align: left;
   color: var(--ls-ink-3);
   transition: color var(--t-base) var(--ease);
 }
-.ls-story-list li:hover .ls-story-n { color: var(--accent-ink); }
-:root[data-theme='dark'] .ls-story-list li:hover .ls-story-n { color: var(--accent); }
-.ls-story-list h3 { font-size: 1.125rem; line-height: 1.25; margin-bottom: 5px; }
-.ls-story-list p {
+.ls-step:hover { color: var(--ls-ink-2); }
+.ls-step.is-active { color: var(--ls-ink); }
+
+/* The connecting rail: a hairline that fills on the active step. */
+.ls-step-rail {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 1.5px;
+  background: var(--ls-rule);
+}
+.ls-step:first-child .ls-step-rail { top: var(--s-5); }
+.ls-step:last-child .ls-step-rail { bottom: var(--s-5); }
+.ls-step-rail i {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0;
+  background: var(--accent);
+  transition: height 420ms var(--ease-out-soft);
+}
+.ls-step.is-active .ls-step-rail i { height: 100%; }
+
+.ls-step-n {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  padding-top: 3px;
+  color: var(--ls-ink-3);
+  transition: color var(--t-base) var(--ease);
+}
+.ls-step.is-active .ls-step-n { color: var(--accent-ink); }
+
+
+.ls-step-icon {
+  display: grid; place-items: center;
+  width: 34px; height: 34px;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  color: var(--ls-ink-2);
+  transition:
+    background-color var(--t-base) var(--ease),
+    color var(--t-base) var(--ease),
+    transform var(--t-base) var(--ease);
+}
+.ls-step.is-active .ls-step-icon {
+  background: light-dark(var(--navy-900), var(--surface-3));
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+
+.ls-step-text { min-width: 0; }
+.ls-step-name {
+  display: block;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  letter-spacing: -0.018em;
+  color: var(--ls-ink);
+  margin-bottom: 3px;
+}
+.ls-step-line {
+  display: block;
   font-size: var(--ls-small);
-  line-height: 1.6;
-  letter-spacing: -0.004em;
-  max-width: 46ch;
+  line-height: 1.55;
+  color: var(--ls-ink-3);
+  max-width: 40ch;
+  transition: color var(--t-base) var(--ease);
+}
+.ls-step.is-active .ls-step-line { color: var(--ls-ink-2); }
+
+/* The stage holds one height across all five steps so the panel does
+   not jump as the selection moves, and centres against the rail. */
+.ls-process-stage {
+  position: sticky;
+  top: 128px;
+  display: grid;
+  align-items: center;
+  min-height: 340px;
+}
+.ls-process-visual { animation: step-in 420ms var(--ease-out-soft) both; }
+@keyframes step-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (max-width: 1080px) {
+  .ls-process-body { grid-template-columns: minmax(0, 1fr); gap: var(--s-7); }
+  /* Stacked, a fixed stage height is just dead space. */
+  .ls-process-stage { position: static; order: -1; min-height: 0; }
+}
+@media (max-width: 560px) {
+  .ls-step { grid-template-columns: 18px 28px minmax(0, 1fr); gap: var(--s-3); padding-block: var(--s-4); }
+  .ls-step-icon { width: 28px; height: 28px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ls-process-visual { animation: none; }
+  .ls-step-rail i { transition: none; }
 }
 
 /* ============================================================
    02 — THE PRODUCT
-   No border on the section: the tonal change is the separation.
+   Copy holds the left column and stays put; the stage on the
+   right is what changes. The stage runs wider than the column
+   it sits in, so the screen reads as the subject of the section
+   rather than an illustration beside the text.
    ============================================================ */
 .ls-explore {
   background: var(--ls-panel);
   padding-block: var(--ls-section);
 }
-.ls-explore-head { max-width: 40ch; margin-bottom: var(--s-8); }
-.ls-explore-head p { margin-top: var(--s-4); font-size: var(--ls-body); line-height: 1.6; }
 
-.ls-tabs { display: flex; gap: var(--s-1); margin-bottom: var(--s-8); }
+.ls-explore-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.38fr);
+  gap: clamp(var(--s-7), 5vw, var(--s-10));
+  align-items: center;
+}
+
+.ls-explore-copy { max-width: 40ch; }
+.ls-explore-blurb {
+  margin-top: var(--s-4);
+  font-size: var(--ls-body);
+  line-height: 1.6;
+  min-height: 3.2em;
+  animation: blurb-in 380ms var(--ease-out-soft) both;
+}
+@keyframes blurb-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.ls-tabs { position: relative; display: flex; gap: var(--s-1); margin-top: var(--s-6); }
 .ls-tabs button {
-  padding: 10px var(--s-5);
-  border-radius: var(--r-full);
+  position: relative;
+  z-index: 1;
+  padding: 7px var(--s-4);
+  border-radius: var(--r-md);
   font-size: var(--ls-small);
   font-weight: 500;
   letter-spacing: -0.006em;
   color: var(--ls-ink-2);
-  transition: background-color var(--t-base) var(--ease), color var(--t-base) var(--ease);
+  transition: color var(--t-base) var(--ease);
 }
-.ls-tabs button:hover { color: var(--ls-ink); background: var(--surface-3); }
-.ls-tabs button[aria-selected='true'] {
-  background: var(--navy-900); color: #fff; font-weight: var(--fw-semi);
+.ls-tabs button:hover { color: var(--ls-ink); }
+.ls-tabs button[aria-selected='true'] { color: light-dark(#fff, var(--navy-900)); font-weight: 600; }
+
+
+/* Sentence case, not uppercase: it is a sentence, and setting it in
+   caps made a quiet credibility line shout. */
+.ls-explore-caption {
+  display: block;
+  margin-top: var(--s-6);
+  font-size: var(--ls-small);
+  color: var(--ls-ink-3);
 }
-:root[data-theme='dark'] .ls-tabs button[aria-selected='true'] { background: var(--accent); color: var(--navy-900); }
 
 .ls-explore-panel { animation: swap var(--t-slow) var(--ease-out-soft) both; }
 @keyframes swap {
-  from { opacity: 0; transform: translateY(10px) scale(0.995); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
+}
+
+@media (max-width: 1080px) {
+  .ls-explore-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-7); }
+  .ls-explore-copy { max-width: none; }
+  .ls-explore-blurb { min-height: 0; }
 }
 
 /* ============================================================
    THE LIVE MOMENT — the page's pause
    ============================================================ */
 .ls-live {
-  background: var(--navy-900);
-  padding-block: var(--ls-section);
+  background:
+    radial-gradient(70rem 40rem at 18% -8rem, rgb(124 156 200 / 0.10), transparent 55%),
+    linear-gradient(180deg, #0A2140 0%, var(--navy-900) 40%);
+  /* The page's pause earns a little more air than the chapters. */
+  padding-block: calc(var(--ls-section) * 1.15);
   --ls-rule: rgb(255 255 255 / 0.1);
   --ls-ink: #fff;
   --ls-ink-2: var(--navy-200);
@@ -387,19 +529,51 @@
 }
 .ls-live-copy > p { font-size: var(--ls-body); line-height: 1.6; margin-top: var(--s-5); max-width: 34ch; }
 
+/* The code and the room sit inside one framed panel, drawn the way the
+   product draws them — a bar, a body, a hairline between. Demonstration
+   numbers live inside this frame, never in the page's own voice. */
+.ls-live-panel {
+  margin-top: clamp(var(--s-6), 3vw, var(--s-7));
+  max-width: 600px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: var(--r-lg);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 28px 56px -36px rgb(0 0 0 / 0.5);
+  overflow: hidden;
+}
+.ls-live-panel-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s-4);
+  padding: 10px var(--s-5);
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+  font-family: var(--font-mono);
+  font-size: var(--ls-meta);
+  letter-spacing: 0.02em;
+  color: var(--navy-200);
+}
+.ls-live-panel-body { padding: var(--s-5) var(--s-5) var(--s-6); }
+.ls-live-panel-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--navy-300);
+  margin-bottom: var(--s-3);
+}
+
 .ls-live-code {
   display: flex;
   gap: clamp(6px, 1vw, 10px);
-  margin-top: clamp(var(--s-8), 5vw, var(--s-9));
 }
 .ls-live-code span {
   flex: 1 1 0;
   max-width: 84px;
   aspect-ratio: 3 / 4;
   display: grid; place-items: center;
-  border: 1px solid rgb(255 255 255 / 0.16);
-  border-radius: var(--r-lg);
-  background: rgb(255 255 255 / 0.05);
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: var(--r-md);
+  background: rgb(255 255 255 / 0.06);
   font-family: var(--font-mono);
   font-size: clamp(1.5rem, 3.4vw, 2.25rem);
   font-weight: var(--fw-semi);
@@ -429,47 +603,81 @@
    03 — FOR INSTITUTIONS
    Every cell is a label and a piece of interface.
    ============================================================ */
-.ls-institution { padding-block: var(--ls-section); }
+/* The heading sits beside the grid rather than above it, so this
+   section does not repeat the rhythm the process section already uses. */
+/* Slightly denser than the chapters around it — the grid carries the
+   information, so the section does not need the full measure of air. */
+.ls-institution { padding-block: calc(var(--ls-section) * 0.9); }
+.ls-institution-lede {
+  margin-top: var(--s-5);
+  font-size: var(--ls-small);
+  line-height: 1.6;
+  color: var(--ls-ink-2);
+  max-width: 36ch;
+}
+.ls-institution-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr);
+  gap: clamp(var(--s-7), 5vw, var(--s-9));
+  align-items: start;
+}
+.ls-institution-grid .ls-section-head { margin-bottom: 0; position: sticky; top: 128px; }
+@media (max-width: 1080px) {
+  .ls-institution-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-6); }
+  .ls-institution-grid .ls-section-head { position: static; margin-bottom: var(--s-6); }
+}
 
 .ls-bento {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--s-5);
 }
-.ls-bento-main { grid-column: span 2; grid-row: span 2; }
+.ls-bento-main { grid-column: 1 / -1; }
 .ls-bento-cell {
   display: flex;
   flex-direction: column;
   gap: var(--s-4);
-  padding: var(--s-6);
-  border-radius: var(--r-xl);
+  padding: var(--s-5);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
   background: var(--ls-panel);
-  transition: background-color var(--t-base) var(--ease);
 }
-.ls-bento-cell:hover { background: color-mix(in srgb, var(--navy-900) 2%, var(--ls-panel)); }
 
+/* A label, so caps are earned — but 0.14em tracking made them shout
+   across the width of the cell. */
 .ls-cell-label {
   font-size: 0.6875rem;
   font-weight: 500;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ls-ink-3);
   flex: none;
 }
+/* One line of the buyer's case per cell, tucked under its label. */
+.ls-cell-cap {
+  margin-top: calc(-1 * var(--s-2));
+  font-size: var(--ls-small);
+  line-height: 1.55;
+  color: var(--ls-ink-2);
+  max-width: 38ch;
+}
+/* Fragments sit on the cell floor, so the two cells stay level even
+   when their captions wrap differently. */
+.ls-bento-cell > :last-child { margin-top: auto; }
 
 /* Screenshots end in a fade, never on a hard edge mid-row. */
 .ls-crop {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: var(--r-2xl);
+  border-radius: var(--r-lg);
   background: var(--surface);
 }
 .ls-crop .pf { border: 0; border-radius: 0; box-shadow: none; }
 .ls-crop-top {
   max-height: 470px;
   border-bottom: 0;
-  border-radius: var(--r-2xl) var(--r-2xl) 0 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
   -webkit-mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
 }
@@ -478,9 +686,11 @@
    CLOSE
    ============================================================ */
 .ls-cta {
-  background: var(--navy-900);
+  background:
+    radial-gradient(60rem 30rem at 82% 110%, rgb(124 156 200 / 0.09), transparent 55%),
+    var(--navy-900);
   --ls-rule: rgb(255 255 255 / 0.1);
-  padding-block: clamp(var(--s-10), 8vw, 140px);
+  padding-block: clamp(var(--s-9), 6vw, 104px);
 }
 .ls-cta :focus-visible { outline-color: var(--accent); }
 .ls-cta-inner {
@@ -489,10 +699,10 @@
 }
 .ls-cta h2 {
   color: #fff;
-  font-size: clamp(2rem, 1.3rem + 2.8vw, 3.5rem);
-  letter-spacing: -0.035em;
-  line-height: 1.02;
-  max-width: 14ch;
+  font-size: var(--ls-h2);
+  letter-spacing: -0.028em;
+  line-height: 1.1;
+  max-width: 16ch;
 }
 .ls-cta p { color: var(--navy-300); margin-top: var(--s-5); font-size: var(--ls-small); }
 
@@ -542,8 +752,6 @@
    RESPONSIVE
    ============================================================ */
 @media (max-width: 1100px) {
-  .ls-story-grid { grid-template-columns: minmax(0, 1fr); }
-  .ls-story-head { position: static; }
   .ls-live-grid { grid-template-columns: minmax(0, 1fr); }
   .ls-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ls-bento-main { grid-column: span 2; grid-row: auto; }
@@ -555,13 +763,6 @@
   .ls-nav-toggle { display: grid; }
   .ls-sheet { display: block; }
 
-  .ls-hero-phone { right: -12px; bottom: -40px; width: 190px; }
-  .ls-hero-phone .phone { width: 190px; padding: 6px; border-radius: 24px; }
-  .ls-hero-phone .phone-screen { padding: 14px 11px 11px; font-size: 9.5px; border-radius: 19px; }
-  .ls-hero-phone .phone-question { font-size: 11px; margin: 9px 0; }
-  .ls-hero-phone .phone-options li { padding: 6px 7px; font-size: 9.5px; }
-  .ls-hero-phone .phone-options .pf-key { width: 15px; height: 15px; }
-  .ls-hero-phone .phone-submit { padding: 7px; font-size: 9.5px; }
 }
 
 @media (max-width: 640px) {
@@ -579,9 +780,6 @@
     -webkit-mask-image: linear-gradient(to bottom, #000 74%, transparent 100%);
     mask-image: linear-gradient(to bottom, #000 74%, transparent 100%);
   }
-  .ls-hero-phone { bottom: -24px; right: -6px; width: 170px; }
-  .ls-story-list li { grid-template-columns: 44px minmax(0, 1fr); gap: var(--s-4); }
-  .ls-story-n { font-size: 1.125rem; }
   .ls-tabs { gap: 0; }
   .ls-tabs button { padding-inline: var(--s-3); font-size: var(--fs-xs); }
   .ls-bento, .ls-bento-main { grid-template-columns: minmax(0, 1fr); grid-column: 1 / -1; }
@@ -593,19 +791,17 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ls-hero-frame, .ls-hero-phone, .ls-live-code span, .ls-explore-panel { animation: none; }
-  .ls-hero-frame > .pf, .ls-hero-phone { transform: none; }
 }
 
 /* ============================================================
    THE SIGNATURE DEVICE — synchronisation
    ------------------------------------------------------------
-   One code, one room, many answers. Forty-two marks stand for
-   the students in the hall; twenty-six of them have answered.
-   They fill in sequence when the section is reached, which is
-   the product's whole idea expressed without a sentence.
+   One code, one room, many answers. The marks stand for the
+   students in the hall and fill in sequence when the section
+   is reached. The whole device lives inside the live panel's
+   frame, so its counts read as product depiction.
    ============================================================ */
-.ls-sync { margin-top: clamp(var(--s-7), 4vw, var(--s-8)); }
+.ls-sync { margin-top: var(--s-6); }
 
 .ls-sync-meta {
   display: flex;
@@ -614,7 +810,7 @@
   margin-bottom: var(--s-4);
   font-size: var(--ls-meta);
   font-weight: 500;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--navy-300);
 }
@@ -628,18 +824,17 @@
   animation: live-pulse 2.4s var(--ease-in-out) infinite;
 }
 
-/* 554px is exactly the width of the six room-code tiles above it, so
-   the room aligns to the code that opened it. */
+/* The room spans the same width as the code tiles above it, so the
+   hall aligns to the code that opened it. */
 .ls-sync-room {
   display: grid;
   grid-template-columns: repeat(21, minmax(0, 1fr));
   gap: 7px;
-  max-width: 554px;
 }
 .ls-sync-room span {
   aspect-ratio: 1;
-  border-radius: 2px;
-  background: rgb(255 255 255 / 0.11);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.12);
   transition: background-color var(--t-base) var(--ease);
 }
 .reveal.in .ls-sync-room span.is-answered {
@@ -651,10 +846,7 @@
   from { opacity: 0.15; transform: scale(0.55); background: rgb(255 255 255 / 0.11); }
   to   { opacity: 1; transform: none; }
 }
-@keyframes live-pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.28; }
-}
+
 
 @media (max-width: 560px) {
   .ls-sync-room { grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 5px; }
@@ -666,50 +858,91 @@
 }
 
 /* ============================================================
-   EXPLORER CONTROLS
+   EXPLORER TAB INDICATOR
+   The indicator travels to the selected tab; the labels hold
+   still. Width and offset are measured in the component, since
+   the three labels are different lengths.
    ============================================================ */
-.ls-explore-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s-5);
-  flex-wrap: wrap;
-  margin-bottom: var(--s-8);
-}
-.ls-explore-caption {
-  font-family: var(--font-mono);
-  font-size: var(--ls-meta);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ls-ink-3);
-  animation: caption-in 380ms var(--ease-out-soft) both;
-}
-@keyframes caption-in {
-  from { opacity: 0; transform: translateY(3px); }
-  to   { opacity: 1; transform: none; }
-}
-
-/* The indicator travels; the labels stay still. */
-.ls-tabs { position: relative; }
 .ls-tabs-indicator {
   position: absolute;
   top: 0; bottom: 0;
   left: 0;
   width: var(--ind-w, 0);
   transform: translateX(var(--ind-x, 0));
-  border-radius: var(--r-full);
-  background: var(--navy-900);
+  border-radius: var(--r-md);
+  background: light-dark(var(--navy-900), var(--accent));
   transition:
     transform 480ms var(--ease-out-soft),
     width 480ms var(--ease-out-soft);
 }
-:root[data-theme='dark'] .ls-tabs-indicator { background: var(--accent); }
-.ls-tabs button { position: relative; z-index: 1; background: none; }
-.ls-tabs button:hover { background: none; color: var(--ls-ink); }
-.ls-tabs button[aria-selected='true'] { background: none; color: #fff; }
-:root[data-theme='dark'] .ls-tabs button[aria-selected='true'] { color: var(--navy-900); }
+
 
 @media (prefers-reduced-motion: reduce) {
   .ls-tabs-indicator { transition: none; }
-  .ls-explore-caption { animation: none; }
+  .ls-explore-blurb, .ls-explore-panel { animation: none; }
+}
+
+/* ============================================================
+   CAPABILITIES — a ruled list, not a card grid. Every line is a
+   feature that ships; each column is one role's working day.
+   ============================================================ */
+.ls-caps { padding-block: var(--ls-section); border-top: 1px solid var(--ls-rule); }
+.ls-caps-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr);
+  gap: clamp(var(--s-7), 5vw, var(--s-9));
+  align-items: start;
+}
+.ls-caps-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-7);
+}
+.ls-caps-col h3 {
+  font-size: var(--fs-label);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--ls-ink-3);
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--ls-rule);
+}
+.ls-caps-col ul { display: flex; flex-direction: column; }
+.ls-caps-col li {
+  display: flex; gap: var(--s-3);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--ls-rule);
+  font-size: var(--ls-small);
+  line-height: 1.5;
+  color: var(--ls-ink-2);
+}
+.ls-caps-col li strong { display: block; font-weight: 500; color: var(--ls-ink); }
+.ls-caps-col li svg { flex: none; margin-top: 3px; color: var(--ls-ink-3); }
+@media (max-width: 1080px) { .ls-caps-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-6); } }
+@media (max-width: 760px) { .ls-caps-cols { grid-template-columns: minmax(0, 1fr); gap: var(--s-5); } }
+
+/* ============================================================
+   ANALYTICS — the analytics screen, with the two questions it
+   answers beside it.
+   ============================================================ */
+.ls-insight { padding-block: var(--ls-section); background: var(--ls-panel); }
+.ls-insight-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.6fr);
+  gap: clamp(var(--s-7), 5vw, var(--s-10));
+  align-items: center;
+}
+.ls-insight-copy { max-width: 36ch; }
+.ls-insight-copy p { margin-top: var(--s-4); font-size: var(--ls-body); line-height: 1.6; }
+.ls-insight-list { margin-top: var(--s-6); display: flex; flex-direction: column; border-top: 1px solid var(--ls-rule); }
+.ls-insight-list li {
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--ls-rule);
+  font-size: var(--ls-small);
+  color: var(--ls-ink-2);
+}
+.ls-insight-list li strong { display: block; font-weight: 500; color: var(--ls-ink); }
+@media (max-width: 1080px) {
+  .ls-insight-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-6); }
+  .ls-insight-copy { max-width: none; }
 }

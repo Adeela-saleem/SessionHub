@@ -2,8 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import type { ApprovalStatus, User } from '../../lib/types';
 import {
-  Avatar, Badge, Button, Card, CardHead, DataTable, EmptyState, PageHeader,
-  useToast, type Column,
+  Avatar, Button, DataTable, EmptyState, PageHeader, useToast, type Column,
 } from '../../components/ui';
 import { IconCheck, IconCheckCircle, IconClose, IconMail } from '../../components/icons';
 import { formatDate, relativeTime } from '../../lib/format';
@@ -40,7 +39,7 @@ export default function AdminApprovals() {
     {
       key: 'name', header: 'Applicant', sortValue: (u) => u.name,
       cell: (u) => (
-        <span className="row-tight">
+        <span className="cell-user">
           <Avatar name={u.name} size="sm" />
           <span>
             <span className="cell-primary">{u.name}</span>
@@ -50,17 +49,17 @@ export default function AdminApprovals() {
       ),
     },
     {
-      key: 'department', header: 'Department', sortValue: (u) => u.department ?? '',
-      cell: (u) => u.department ?? <span className="t-muted">Not stated</span>,
+      key: 'department', header: 'Department', sortValue: (u) => u.department ?? '', secondary: true,
+      cell: (u) => u.department ?? <span className="cell-muted">Not stated</span>,
     },
     {
-      key: 'applied', header: 'Applied', width: '160px', sortValue: (u) => u.createdAt ?? '',
-      cell: (u) => <span title={formatDate(u.createdAt)}>{relativeTime(u.createdAt)}</span>,
+      key: 'applied', header: 'Applied', width: 140, sortValue: (u) => u.createdAt ?? '',
+      cell: (u) => <span className="cell-muted" title={formatDate(u.createdAt)}>{relativeTime(u.createdAt)}</span>,
     },
     {
-      key: 'actions', header: <span className="sr-only">Decision</span>, align: 'right', width: '200px',
+      key: 'actions', header: <span className="sr-only">Decision</span>, align: 'right', width: 190,
       cell: (u) => (
-        <span className="row-tight" style={{ justifyContent: 'flex-end' }}>
+        <span className="cluster" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
           <Button size="xs" variant="danger" onClick={() => decide.mutate({ id: u.id, approvalStatus: 'REJECTED' })}>
             <IconClose size={13} />Reject
           </Button>
@@ -72,20 +71,20 @@ export default function AdminApprovals() {
     },
   ];
 
+  const count = pending.data?.length ?? 0;
+
   return (
     <>
       <PageHeader
-        eyebrow="Management"
-        title="Teacher approvals"
-        lede="Teaching accounts cannot sign in until an administrator approves them. Reviewing promptly keeps classes running."
+        title="Approvals"
+        lede={pending.isLoading
+          ? 'Loading applications…'
+          : count
+            ? `${count} teaching ${count === 1 ? 'account is' : 'accounts are'} waiting. Teachers cannot sign in until approved.`
+            : 'Every teaching account has been reviewed.'}
       />
 
-      <Card className="card-flush">
-        <CardHead
-          title="Waiting for review"
-          sub="Newest applications first"
-          action={pending.data?.length ? <Badge tone="warning">{pending.data.length} waiting</Badge> : undefined}
-        />
+      <div className="table-frame">
         <DataTable
           rows={pending.data}
           columns={columns}
@@ -106,14 +105,14 @@ export default function AdminApprovals() {
               </Button>
             </>
           )}
-          pageSize={10}
+          pageSize={15}
           mobileCard={(u) => (
             <div className="record" style={{ alignItems: 'flex-start' }}>
               <Avatar name={u.name} size="sm" />
               <div className="record-main">
                 <div className="record-title">{u.name}</div>
                 <div className="record-meta row-tight"><IconMail size={12} />{u.email}</div>
-                <div className="row-tight" style={{ marginTop: 'var(--s-3)' }}>
+                <div className="cluster" style={{ marginTop: 'var(--s-2)' }}>
                   <Button size="xs" onClick={() => decide.mutate({ id: u.id, approvalStatus: 'APPROVED' })}>Approve</Button>
                   <Button size="xs" variant="danger" onClick={() => decide.mutate({ id: u.id, approvalStatus: 'REJECTED' })}>Reject</Button>
                 </div>
@@ -122,13 +121,13 @@ export default function AdminApprovals() {
           )}
           empty={
             <EmptyState
-              icon={<IconCheckCircle size={20} />}
+              icon={<IconCheckCircle size={18} />}
               title="Nothing waiting"
-              description="Every teaching account has been reviewed. New applications appear here as soon as someone signs up as a teacher."
+              description="New applications appear here as soon as someone signs up as a teacher."
             />
           }
         />
-      </Card>
+      </div>
     </>
   );
 }

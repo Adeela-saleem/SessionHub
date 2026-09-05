@@ -48,17 +48,24 @@ export function PanelRow({ to, children, className = '' }: {
    Stat — a metric with its context. Values stay at a readable
    size; the label and footnote do the explaining.
    ============================================================ */
-export function Stat({ label, value, foot, delta, deltaLabel }: {
+export type StatTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info';
+
+export function Stat({ label, value, foot, delta, deltaLabel, icon, tone = 'neutral' }: {
   label: ReactNode;
   value: ReactNode;
   foot?: ReactNode;
   /** Signed percentage; renders direction as icon + colour + text. */
   delta?: number;
   deltaLabel?: string;
+  /** A small tonal mark beside the number. */
+  icon?: ReactNode;
+  tone?: StatTone;
 }) {
   const dir = delta === undefined ? null : delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
   return (
-    <div className="stat">
+    <div className={`stat ${icon ? 'stat-iconed' : ''}`.trim()}>
+      {icon && <span className={`stat-icon tone-${tone}`} aria-hidden="true">{icon}</span>}
+      <span className="stat-main">
       <span className="stat-label">{label}</span>
       <span className="stat-value">{value}</span>
       <span className="stat-foot">
@@ -71,12 +78,15 @@ export function Stat({ label, value, foot, delta, deltaLabel }: {
         )}
         {foot}
       </span>
+      </span>
     </div>
   );
 }
 
-export function StatGrid({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`stat-grid ${className}`.trim()}>{children}</div>;
+/** KPI row. Ruled top and bottom by default; `card` boxes it for use
+    inside a panel. */
+export function StatGrid({ children, card, className = '' }: { children: ReactNode; card?: boolean; className?: string }) {
+  return <div className={`stat-grid ${card ? 'stat-grid-card' : ''} ${className}`.trim()}>{children}</div>;
 }
 
 /* ============================================================
@@ -136,10 +146,10 @@ export function Banner({ tone = 'info', title, children, action }: {
       className={`banner ${tone === 'neutral' ? '' : `banner-${tone}`}`.trim()}
       role={tone === 'error' ? 'alert' : 'status'}
     >
-      <Ico size={16} />
+      <Ico size={15} />
       <div className="grow">
         {title && <strong>{title}</strong>}
-        {children}
+        {children && <span className="banner-text">{children}</span>}
       </div>
       {action}
     </div>

@@ -4,9 +4,12 @@ import { Reveal, RevealWords } from '../../components/Reveal';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { LinkButton } from '../../components/ui';
 import { IconArrowRight, IconClose, IconMenu } from '../../components/icons';
-import { PhoneFrame, TeacherLiveScreen } from './ProductFrames';
+import { TeacherLiveScreen } from './ProductFrames';
 import { useHeroParallax, useScrolled } from './useLandingMotion';
-import { ExplorerSection, InstitutionSection, LiveSection, Marker, StorySection } from './sections';
+import {
+  CapabilitiesSection, ExplorerSection, InsightSection, InstitutionSection, LiveSection, Marker,
+  ProcessSection,
+} from './sections';
 
 /* ============================================================
    SessionHub — public site
@@ -21,6 +24,7 @@ import { ExplorerSection, InstitutionSection, LiveSection, Marker, StorySection 
 const LINKS = [
   { href: '#how', label: 'How it works' },
   { href: '#product', label: 'Product' },
+  { href: '#features', label: 'Features' },
   { href: '#institutions', label: 'For institutions' },
 ];
 
@@ -53,7 +57,7 @@ function SiteNav() {
         <div className="ls-nav-actions">
           <ThemeToggle />
           <LinkButton to="/auth" variant="tertiary" size="sm" className="ls-nav-login">Log in</LinkButton>
-          <LinkButton to="/auth" size="sm">Get started</LinkButton>
+          <LinkButton to="/auth?mode=signup" size="sm">Get started</LinkButton>
           <button
             type="button"
             className="ls-nav-toggle"
@@ -77,7 +81,7 @@ function SiteNav() {
           </nav>
           <div className="ls-sheet-actions">
             <LinkButton to="/auth" variant="secondary" size="lg" block>Log in</LinkButton>
-            <LinkButton to="/auth" size="lg" block>Get started</LinkButton>
+            <LinkButton to="/auth?mode=signup" size="lg" block>Get started</LinkButton>
           </div>
         </div>
       )}
@@ -87,9 +91,8 @@ function SiteNav() {
 
 /* ============================================================
    HERO
-   Editorial rather than centred: the headline holds the left,
-   a short meta column holds the right, and the product breaks
-   out below both — wider than the text it belongs to.
+   A single copy column, then the product breaking out below it
+   — wider than the text it belongs to.
    ============================================================ */
 function Hero() {
   const stage = useRef<HTMLDivElement>(null);
@@ -111,21 +114,22 @@ function Hero() {
               what the class understood.
             </p>
             <div className="ls-hero-cta">
-              <LinkButton to="/auth" size="lg">Get started<IconArrowRight size={16} /></LinkButton>
+              <LinkButton to="/auth?mode=signup" size="lg">Get started<IconArrowRight size={16} /></LinkButton>
               <a href="#product" className="ls-textlink">See the product</a>
             </div>
           </Reveal>
         </div>
-
       </div>
 
       {/* The product breaks the text column, and keeps going past the fold. */}
       <div className="ls-hero-stage" ref={stage}>
         <div className="ls-hero-glow" aria-hidden="true" />
+        {/* One screen, whole. A phone laid over it covered the room code
+            and the queue — the two things the shot exists to show — and
+            left a sliver of frame past its edge. The student's device
+            gets its own section further down, where it is the subject. */}
         <div className="ls-hero-frame">
           <TeacherLiveScreen />
-          {/* The second layer: the same session, on a student's phone. */}
-          <div className="ls-hero-phone"><PhoneFrame /></div>
         </div>
       </div>
     </section>
@@ -143,7 +147,7 @@ function FinalCta() {
           <h2 id="cta-title">Build a better hour of teaching.</h2>
           <p>Teaching accounts are verified by your administrator.</p>
         </div>
-        <LinkButton to="/auth" size="lg">Get started<IconArrowRight size={16} /></LinkButton>
+        <LinkButton to="/auth?mode=signup" size="lg">Get started<IconArrowRight size={16} /></LinkButton>
       </div>
     </section>
   );
@@ -154,11 +158,12 @@ function SiteFooter() {
     { title: 'Product', links: [
       { href: '#product', label: 'Product' },
       { href: '#how', label: 'How it works' },
+      { href: '#features', label: 'Features' },
       { href: '#institutions', label: 'For institutions' },
     ] },
     { title: 'Account', links: [
       { to: '/auth', label: 'Log in' },
-      { to: '/auth', label: 'Create an account' },
+      { to: '/auth?mode=signup', label: 'Create an account' },
     ] },
   ];
 
@@ -189,7 +194,6 @@ function SiteFooter() {
 
       <div className="ls-wrap ls-footer-base">
         <span>© {new Date().getFullYear()} SessionHub</span>
-        <span>SDG 4 — Quality Education</span>
       </div>
     </footer>
   );
@@ -202,9 +206,11 @@ export default function Landing() {
       <SiteNav />
       <main id="main">
         <Hero />
-        <StorySection />
+        <ProcessSection />
         <ExplorerSection />
+        <CapabilitiesSection />
         <LiveSection />
+        <InsightSection />
         <InstitutionSection />
         <FinalCta />
       </main>

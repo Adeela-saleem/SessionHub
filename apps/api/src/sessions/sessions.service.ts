@@ -6,6 +6,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Prisma, SessionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../common/decorators/current-user.decorator';
+import { NotificationsService } from '../notifications/notifications.service';
 import { generateRoomCode } from './room-code';
 
 /** A session whose teacher has not pinged for this long is auto-closed. */
@@ -15,7 +16,7 @@ const TEACHER_SILENCE_TIMEOUT_MS = 30 * 60_000;
 export class SessionsService {
   private readonly logger = new Logger(SessionsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private notifications: NotificationsService) {}
 
   // ── Creation ────────────────────────────────────────────────
   async create(user: AuthUser, courseId: string, title?: string) {
@@ -40,6 +41,16 @@ export class SessionsService {
             lastTeacherPingAt: new Date(),
           },
           include: { course: { select: { code: true, name: true } } },
+        })
+        .then(async (session) => {
+          // Durable + push notice to the roster: class is live, here's the code.
+          await this.notifications.notifyCourse(courseId, {
+            type: 'session.live',
+            title: `${session.course.code} is live now`,
+            body: `Join with code ${session.roomCode}`,
+            link: '/student/live',
+          }, user.id);
+          return session;
         });
       } catch (e) {
         const isCodeCollision =

@@ -86,6 +86,57 @@ async function main() {
     });
   }
 
+  // ── LMS demo content: grading scheme, an assignment, a schedule ──
+  const hasCategories = await prisma.gradeCategory.findFirst({ where: { courseId: course.id } });
+  if (!hasCategories) {
+    await prisma.gradeCategory.createMany({
+      data: [
+        { courseId: course.id, name: 'Assignments', kind: 'ASSIGNMENTS', weightPct: 40, order: 0 },
+        { courseId: course.id, name: 'Live quizzes', kind: 'LIVE_QUIZZES', weightPct: 40, order: 1 },
+        { courseId: course.id, name: 'Attendance', kind: 'ATTENDANCE', weightPct: 20, order: 2 },
+      ],
+    });
+  }
+
+  const hasAssignment = await prisma.assignment.findFirst({ where: { courseId: course.id } });
+  if (!hasAssignment) {
+    const cat = await prisma.gradeCategory.findFirst({
+      where: { courseId: course.id, kind: 'ASSIGNMENTS' },
+    });
+    await prisma.assignment.create({
+      data: {
+        courseId: course.id,
+        categoryId: cat?.id ?? null,
+        title: 'ER modelling exercise',
+        instructions: 'Model the library domain. Submit a PDF or write your answer inline.',
+        maxMarks: 50,
+        dueAt: new Date(Date.now() + 7 * 86_400_000),
+        status: 'PUBLISHED',
+      },
+    });
+  }
+
+  const hasSlot = await prisma.scheduleSlot.findFirst({ where: { courseId: course.id } });
+  if (!hasSlot) {
+    await prisma.scheduleSlot.createMany({
+      data: [
+        { courseId: course.id, dayOfWeek: 1, startTime: '09:00', endTime: '10:30', room: 'LT-4' },
+        { courseId: course.id, dayOfWeek: 3, startTime: '11:00', endTime: '12:30', room: 'LT-4' },
+      ],
+    });
+  }
+
+  const hasAnnouncement = await prisma.announcement.findFirst({ where: { courseId: course.id } });
+  if (!hasAnnouncement) {
+    await prisma.announcement.create({
+      data: {
+        courseId: course.id, authorId: teacher.id,
+        title: 'Welcome to Database Systems',
+        body: 'Lecture notes and the weekly schedule are up. Live sessions run with a room code — join from the Live session page.',
+      },
+    });
+  }
+
   console.log('Seeded:');
   console.log(`  admin    admin@sessionhub.edu   / Password123!`);
   console.log(`  teacher  teacher@sessionhub.edu / Password123!`);

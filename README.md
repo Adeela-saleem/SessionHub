@@ -172,7 +172,7 @@ The production image runs `migrate deploy` on start.
 | `JWT_REFRESH_TTL` | Refresh-token lifetime (default `7d`) | no |
 | `CORS_ORIGIN` | Comma-separated allowed origins | no |
 | `GROQ_API_KEY` | Enables AI quiz drafting | no |
-| `GROQ_MODEL` | Default `llama-3.1-8b-instant` | no |
+| `GROQ_MODEL` | Default `openai/gpt-oss-120b` (Groq retired the Llama 3.1 models) | no |
 | `VITE_API_URL` | API origin baked into the web build | no |
 
 Boot fails fast if a required variable is missing or a secret is too short.

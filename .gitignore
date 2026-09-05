@@ -9,3 +9,6 @@ coverage/
 .vscode/
 .idea/
 apps/api/prisma/migrations/dev.db*
+apps/api/uploads/*
+!apps/api/uploads/.gitkeep
+*.tsbuildinfo

@@ -33,7 +33,7 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: var(--ls-heading);
   text-wrap: balance;
 }
-h1 { font-size: var(--fs-h1); }
+h1 { font-size: var(--fs-h1); letter-spacing: -0.02em; }
 h2 { font-size: var(--fs-h2); }
 h3 { font-size: var(--fs-h3); }
 h4 { font-size: var(--fs-h4); }
@@ -64,6 +64,14 @@ code, kbd, samp, .mono {
   font-variant-numeric: tabular-nums slashed-zero;
   font-size: 0.92em;
 }
+/* Data: identifiers read character by character — codes, ids, times. */
+.t-data {
+  font-family: var(--font-mono);
+  font-size: var(--fs-data);
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+}
 
 img, svg, video { display: block; max-width: 100%; }
 
@@ -75,15 +83,16 @@ button, input, select, textarea {
 button { cursor: pointer; background: none; border: 0; padding: 0; }
 button:disabled { cursor: not-allowed; }
 
-::selection { background: var(--amber-200); color: var(--navy-900); }
-:root[data-theme='dark'] ::selection { background: rgb(245 196 0 / 0.3); color: var(--text); }
+::selection {
+  background: light-dark(var(--amber-200), rgb(245 196 0 / 0.3));
+  color: light-dark(var(--navy-900), var(--text));
+}
 
 /* ── Focus — always visible, never doubled ──────────────── */
 :focus { outline: none; }
 :focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
-  border-radius: var(--r-xs);
 }
 
 /* ── Scrollbars — thin, tonal, never chrome-coloured ────── */
@@ -107,7 +116,7 @@ button:disabled { cursor: not-allowed; }
   letter-spacing: var(--ls-display);
   font-weight: var(--fw-semi);
 }
-.t-h1 { font-size: var(--fs-h1); }
+.t-h1 { font-size: var(--fs-h1); letter-spacing: -0.02em; }
 .t-h2 { font-size: var(--fs-h2); }
 .t-h3 { font-size: var(--fs-h3); }
 .t-body { font-size: var(--fs-body); }
@@ -125,15 +134,16 @@ button:disabled { cursor: not-allowed; }
 }
 
 .t-muted     { color: var(--text-muted); }
+.t-danger    { color: var(--danger); }
 .t-secondary { color: var(--text-secondary); }
 .t-ink       { color: var(--text); }
 .t-num       { font-variant-numeric: tabular-nums slashed-zero; }
 
 .t-metric {
-  font-size: 1.75rem;
+  font-size: var(--fs-metric);
   font-weight: var(--fw-semi);
-  letter-spacing: -0.03em;
-  line-height: 1.05;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   font-variant-numeric: tabular-nums slashed-zero;
   color: var(--text);
 }
@@ -158,8 +168,76 @@ button:disabled { cursor: not-allowed; }
 .col-tight { display: flex; flex-direction: column; gap: var(--s-1); }
 .grow { flex: 1 1 auto; min-width: 0; }
 .stack > * + * { margin-top: var(--s-6); }
+.stack-tight > * + * { margin-top: var(--s-4); }
 
-.grid-2, .grid-3, .grid-4 { display: grid; gap: var(--s-4); }
+/* ============================================================
+   LAYOUT PRIMITIVES
+   Every page is built from these, so title, filters, buttons,
+   tables and charts share one left edge and one rhythm.
+   ============================================================ */
+.container {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+}
+.container-wide    { max-width: var(--content-wide); }
+.container-reading { max-width: var(--content-reading); }
+.container-form    { max-width: var(--content-form); }
+
+/* Section: a titled region of a page. No border, no card — the
+   title row and its hairline are the grouping. */
+.section { margin-top: var(--s-7); }
+.section-tight { margin-top: var(--s-6); }
+.section-head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-4);
+  min-height: 28px;
+  margin-bottom: var(--s-3);
+}
+.section-title {
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-semi);
+  letter-spacing: var(--ls-heading);
+  color: var(--text);
+}
+.section-sub { margin-left: var(--s-2); font-size: var(--fs-caption); font-weight: var(--fw-regular); color: var(--text-muted); }
+.section-link {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: var(--fs-caption); font-weight: var(--fw-medium);
+  color: var(--text-secondary);
+}
+.section-link:hover { color: var(--text); }
+.section-link svg { width: 13px; height: 13px; }
+
+/* Cluster: inline controls that wrap. Toolbar: a cluster with a
+   fixed control height, used above tables and lists. */
+.cluster { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.toolbar {
+  display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap;
+  min-height: var(--ctl-md);
+  margin-bottom: var(--s-3);
+}
+.toolbar-end { margin-left: auto; display: flex; align-items: center; gap: var(--s-2); }
+.toolbar .input-wrap { flex: 1 1 220px; max-width: 320px; }
+.toolbar .input, .toolbar .select { min-height: var(--ctl-md); height: var(--ctl-md); padding-block: 0; }
+
+/* Hairline rules and dividers used instead of cards. */
+.rule { border: 0; border-top: 1px solid var(--border); margin: 0; }
+.divided > * + * { border-top: 1px solid var(--border); }
+
+/* Definition rows — label left, value right, hairline between. */
+.kv { display: flex; flex-direction: column; }
+.kv > div {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4);
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-sm);
+}
+.kv > div:last-child { border-bottom: 0; }
+.kv dt { color: var(--text-muted); }
+.kv dd { margin: 0; color: var(--text); font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; text-align: right; }
+
+.grid, .grid-2, .grid-3, .grid-4 { display: grid; gap: var(--s-4); }
+.grid { grid-template-columns: repeat(auto-fill, minmax(var(--grid-min, 240px), 1fr)); }
 .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -173,8 +251,8 @@ button:disabled { cursor: not-allowed; }
 /* Visibility helpers only ever remove an element. They never set a
    display value, so they can be added to a flex or grid container
    without flattening its layout. */
-@media (max-width: 720px) { .hide-sm { display: none !important; } }
-@media (min-width: 721px) { .only-sm { display: none !important; } }
+@media (max-width: 860px) { .hide-sm { display: none !important; } }
+@media (min-width: 861px) { .only-sm { display: none !important; } }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px;
@@ -208,6 +286,12 @@ button:disabled { cursor: not-allowed; }
   0%, 100% { opacity: 1; transform: scale(1); }
   50%      { opacity: 0.45; transform: scale(0.82); }
 }
+/* Lives here (not landing.css) because the app shell's live badge
+   depends on it. */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
 
 .anim-rise { animation: rise var(--t-slow) var(--ease) both; }
 .anim-fade { animation: fade-in var(--t-base) var(--ease) both; }
@@ -216,8 +300,10 @@ button:disabled { cursor: not-allowed; }
   html { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
     scroll-behavior: auto !important;
   }
 }

@@ -20,7 +20,7 @@ export interface Column<T> {
   /** Enables click-to-sort on this column. */
   sortValue?: (row: T) => string | number;
   align?: 'left' | 'right';
-  width?: string;
+  width?: string | number;
   /** Hidden on narrow desktop widths where space is tight. */
   secondary?: boolean;
 }
@@ -260,4 +260,57 @@ function pageWindow(page: number, count: number): (number | null)[] {
   if (end < count - 1) out.push(null);
   out.push(count);
   return out;
+}
+
+/* ============================================================
+   SimpleTable — a table with none of the machinery. Dashboards
+   and panels use it for short, already-sorted lists; it sits
+   bare under a section title or inside a card.
+   ============================================================ */
+export function SimpleTable<T>({ rows, columns, getRowId, bare, compact, caption, onRowClick, className = '' }: {
+  rows: T[];
+  columns: Column<T>[];
+  getRowId: (row: T) => string;
+  bare?: boolean;
+  compact?: boolean;
+  caption?: string;
+  onRowClick?: (row: T) => void;
+  className?: string;
+}) {
+  return (
+    <div className={`table-wrap ${className}`.trim()}>
+      <table className={`data ${bare ? 'data-bare' : ''} ${compact ? 'data-compact' : ''}`.trim()}>
+        {caption && <caption className="sr-only">{caption}</caption>}
+        <thead>
+          <tr>
+            {columns.map((c) => (
+              <th key={c.key} style={{ width: c.width, textAlign: c.align }} className={c.secondary ? 'hide-sm' : undefined}>
+                {c.header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr
+              key={getRowId(row)}
+              className={onRowClick ? 'is-link' : undefined}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+              style={onRowClick ? { cursor: 'pointer' } : undefined}
+            >
+              {columns.map((c) => (
+                <td
+                  key={c.key}
+                  style={{ textAlign: c.align }}
+                  className={[c.align === 'right' ? 'cell-num' : '', c.secondary ? 'hide-sm' : ''].filter(Boolean).join(' ') || undefined}
+                >
+                  {c.cell(row)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }

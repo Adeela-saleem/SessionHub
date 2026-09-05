@@ -9,7 +9,10 @@ import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface SocketUser { id: string; role: string; name: string; }
-type AuthedSocket = Socket & { data: { user?: SocketUser } };
+type AuthedSocket = Socket & { data: { user?: SocketUser; lastReactionAt?: number } };
+
+const REACTION_KINDS = ['confused', 'got-it'] as const;
+type ReactionKind = (typeof REACTION_KINDS)[number];
 
 const room = (sessionId: string) => `session:${sessionId}`;
 const teacherRoom = (sessionId: string) => `session:${sessionId}:teacher`;
@@ -52,6 +55,9 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       }
 
       client.data.user = { id: user.id, role: user.role, name: user.name };
+      // Personal room: lets services push notifications to one person
+      // without tracking socket ids.
+      client.join(`user:${user.id}`);
     } catch {
       client.emit('error', { message: 'Authentication failed' });
       client.disconnect(true);
@@ -106,6 +112,31 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     return { ok: true };
   }
 
+  /**
+   * "Confused / got it" is deliberately ephemeral: nothing is stored,
+   * and no name travels with it — the teacher's counter moves, that is
+   * all. Costing a student nothing to admit confusion is the point.
+   */
+  @SubscribeMessage('session:react')
+  react(
+    @ConnectedSocket() client: AuthedSocket,
+    @MessageBody() body: { sessionId: string; kind: ReactionKind },
+  ) {
+    const user = client.data.user;
+    if (!user || user.role !== 'STUDENT') return { ok: false };
+    if (!body?.sessionId || !REACTION_KINDS.includes(body.kind)) return { ok: false };
+    // Must already be in the room — subscribe did the enrolment check.
+    if (!client.rooms.has(room(body.sessionId))) return { ok: false };
+
+    // One tap a second per connection is plenty for a human thumb.
+    const now = Date.now();
+    if (now - (client.data.lastReactionAt ?? 0) < 1000) return { ok: false };
+    client.data.lastReactionAt = now;
+
+    this.server.to(teacherRoom(body.sessionId)).emit('reaction:received', { kind: body.kind });
+    return { ok: true };
+  }
+
   @SubscribeMessage('session:unsubscribe')
   async unsubscribe(
     @ConnectedSocket() client: AuthedSocket,
@@ -122,6 +153,10 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   /** Teacher-only channel — used for data students must not see. */
+  emitToUser(userId: string, event: string, payload: unknown) {
+    this.server?.to(`user:${userId}`).emit(event, payload);
+  }
+
   emitToTeacher(sessionId: string, event: string, payload: unknown) {
     this.server?.to(teacherRoom(sessionId)).emit(event, payload);
   }

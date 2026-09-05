@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import type { Course, User } from '../../lib/types';
 import {
-  Badge, Banner, Button, Card, CardHead, ConfirmDialog, DataTable, Drawer,
-  EmptyState, Menu, MenuItem, MenuSep, PageHeader, SelectField, Stat, StatGrid,
+  Badge, Banner, Button, ConfirmDialog, DataTable, Drawer,
+  EmptyState, Menu, MenuItem, MenuSep, PageHeader, SelectField,
   TextField, useToast, type Column,
 } from '../../components/ui';
 import { IconBook, IconEdit, IconMore, IconPlus, IconTrash } from '../../components/icons';
@@ -61,36 +61,37 @@ export default function AdminCourses() {
 
   const rows = courses.data ?? [];
   const unassigned = rows.filter((c) => !c.teacher).length;
+  const enrolments = rows.reduce((n, c) => n + (c._count?.enrollments ?? 0), 0);
 
   const columns: Column<Course>[] = [
     {
-      key: 'code', header: 'Code', width: '120px', sortValue: (c) => c.code,
-      cell: (c) => <Link to={`/admin/courses/${c.id}`} className="cell-primary mono">{c.code}</Link>,
+      key: 'code', header: 'Code', width: 100, sortValue: (c) => c.code,
+      cell: (c) => <Link to={`/admin/courses/${c.id}`} className="cell-data">{c.code}</Link>,
     },
     {
       key: 'name', header: 'Course', sortValue: (c) => c.name,
-      cell: (c) => <Link to={`/admin/courses/${c.id}`} className="cell-link">{c.name}</Link>,
+      cell: (c) => <Link to={`/admin/courses/${c.id}`} className="cell-primary">{c.name}</Link>,
     },
     {
-      key: 'teacher', header: 'Teacher', sortValue: (c) => c.teacher?.name ?? '',
+      key: 'teacher', header: 'Teacher', width: 180, sortValue: (c) => c.teacher?.name ?? '',
       cell: (c) => c.teacher?.name ?? <Badge tone="warning">Unassigned</Badge>,
     },
     {
-      key: 'department', header: 'Department', sortValue: (c) => c.department ?? '',
-      cell: (c) => c.department ?? <span className="t-muted">—</span>,
+      key: 'department', header: 'Department', sortValue: (c) => c.department ?? '', secondary: true,
+      cell: (c) => c.department ?? <span className="cell-muted">—</span>,
     },
     {
-      key: 'students', header: 'Students', align: 'right', width: '110px',
+      key: 'students', header: 'Students', align: 'right', width: 96,
       sortValue: (c) => c._count?.enrollments ?? 0,
       cell: (c) => c._count?.enrollments ?? 0,
     },
     {
-      key: 'sessions', header: 'Sessions', align: 'right', width: '110px',
+      key: 'sessions', header: 'Sessions', align: 'right', width: 96,
       sortValue: (c) => c._count?.sessions ?? 0,
       cell: (c) => c._count?.sessions ?? 0,
     },
     {
-      key: 'actions', header: <span className="sr-only">Actions</span>, align: 'right', width: '64px',
+      key: 'actions', header: <span className="sr-only">Actions</span>, align: 'right', width: 56,
       cell: (c) => (
         <Menu label={`Actions for ${c.code}`} trigger={<IconMore size={16} />}>
           {(close) => (
@@ -111,58 +112,53 @@ export default function AdminCourses() {
 
   const editingCourse = editing === 'new' ? null : editing;
 
+  const summary = courses.isError
+    ? 'Could not load courses.'
+    : courses.isLoading
+      ? 'Loading courses…'
+      : `${rows.length} ${rows.length === 1 ? 'course' : 'courses'} · ${enrolments} ${enrolments === 1 ? 'enrolment' : 'enrolments'}${unassigned ? ` · ${unassigned} without a teacher` : ''}`;
+
   return (
     <>
       <PageHeader
-        eyebrow="Management"
         title="Courses"
-        lede="Create courses, assign the teacher who runs them, and keep enrolment in one place."
+        lede={summary}
         actions={
           <Button onClick={() => { setFormError(''); setEditing('new'); }}>
-            <IconPlus size={16} />New course
+            <IconPlus size={15} />New course
           </Button>
         }
       />
 
-      <StatGrid>
-        <Stat label="Courses" value={rows.length} foot="On the platform" />
-        <Stat label="Without a teacher" value={unassigned} foot={unassigned ? 'Cannot run sessions' : 'All assigned'} />
-        <Stat label="Total enrolments" value={rows.reduce((n, c) => n + (c._count?.enrollments ?? 0), 0)} foot="Across all courses" />
-        <Stat label="Sessions held" value={rows.reduce((n, c) => n + (c._count?.sessions ?? 0), 0)} foot="All time" />
-      </StatGrid>
-
-      <div className="section">
-        <Card className="card-flush">
-          <CardHead title="All courses" sub="Select a course to manage its roster" />
-          <DataTable
-            rows={rows}
-            columns={columns}
-            getRowId={(c) => c.id}
-            loading={courses.isLoading}
-            error={courses.isError || undefined}
-            onRetry={() => void courses.refetch()}
-            caption="All courses"
-            search={{ placeholder: 'Search code, title, teacher or department', match: (c) => `${c.code} ${c.name} ${c.teacher?.name ?? ''} ${c.department ?? ''}` }}
-            pageSize={12}
-            mobileCard={(c) => (
-              <Link to={`/admin/courses/${c.id}`} className="record">
-                <div className="record-main">
-                  <div className="record-title">{c.name}</div>
-                  <div className="record-meta">{c.code} · {c.teacher?.name ?? 'Unassigned'}</div>
-                </div>
-                <span className="t-sm t-num t-muted">{c._count?.enrollments ?? 0}</span>
-              </Link>
-            )}
-            empty={
-              <EmptyState
-                icon={<IconBook size={20} />}
-                title="No courses yet"
-                description="Create the first course so teachers can run sessions and students have something to enrol in."
-                action={<Button size="sm" onClick={() => setEditing('new')}><IconPlus size={14} />Create a course</Button>}
-              />
-            }
-          />
-        </Card>
+      <div className="table-frame">
+        <DataTable
+          rows={rows}
+          columns={columns}
+          getRowId={(c) => c.id}
+          loading={courses.isLoading}
+          error={courses.isError || undefined}
+          onRetry={() => void courses.refetch()}
+          caption="All courses"
+          search={{ placeholder: 'Search code, title, teacher or department', match: (c) => `${c.code} ${c.name} ${c.teacher?.name ?? ''} ${c.department ?? ''}` }}
+          pageSize={15}
+          mobileCard={(c) => (
+            <Link to={`/admin/courses/${c.id}`} className="record">
+              <div className="record-main">
+                <div className="record-title">{c.name}</div>
+                <div className="record-meta">{c.code} · {c.teacher?.name ?? 'Unassigned'}</div>
+              </div>
+              <span className="t-sm t-num t-muted">{c._count?.enrollments ?? 0}</span>
+            </Link>
+          )}
+          empty={
+            <EmptyState
+              icon={<IconBook size={18} />}
+              title="No courses yet"
+              description="Create the first course so teachers can run sessions and students have something to enrol in."
+              action={<Button size="sm" onClick={() => setEditing('new')}><IconPlus size={14} />Create a course</Button>}
+            />
+          }
+        />
       </div>
 
       {/* ── Create / edit ─────────────────────────────── */}
@@ -184,7 +180,7 @@ export default function AdminCourses() {
       >
         <form
           id="course-form"
-          className="col"
+          className="form"
           onSubmit={(e: FormEvent<HTMLFormElement>) => {
             e.preventDefault();
             setFormError('');
@@ -204,7 +200,7 @@ export default function AdminCourses() {
             <TextField
               label="Course code" name="code" required maxLength={20}
               placeholder="CS-204"
-              hint="Short and stable — this is what students type and teachers recognise. It cannot be changed later."
+              hint="Short and stable — what students type and teachers recognise. It cannot be changed later."
             />
           )}
 

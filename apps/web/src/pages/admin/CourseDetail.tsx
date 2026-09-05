@@ -5,9 +5,9 @@ import { api, ApiError } from '../../lib/api';
 import type { Course, RosterEntry } from '../../lib/types';
 import { usePageDetail } from '../../components/shell/AppShell';
 import {
-  Avatar, Badge, Banner, Button, Card, CardHead, ConfirmDialog, DataTable,
-  Drawer, EmptyState, ErrorState, LinkButton, PageHeader, Skeleton, Stat,
-  StatGrid, TextField, useToast, type Column,
+  Avatar, Badge, Banner, Button, ConfirmDialog, DataTable,
+  Drawer, EmptyState, ErrorState, LinkButton, PageHeader, Skeleton,
+  TextField, useToast, type Column,
 } from '../../components/ui';
 import { IconPlus, IconTrash, IconUsers } from '../../components/icons';
 
@@ -77,19 +77,19 @@ export default function AdminCourseDetail() {
     {
       key: 'name', header: 'Student', sortValue: (r) => r.student.name,
       cell: (r) => (
-        <span className="row-tight">
+        <span className="cell-user">
           <Avatar name={r.student.name} size="sm" />
           <span className="cell-primary">{r.student.name}</span>
         </span>
       ),
     },
-    { key: 'email', header: 'Email', sortValue: (r) => r.student.email, cell: (r) => r.student.email },
+    { key: 'email', header: 'Email', sortValue: (r) => r.student.email, cell: (r) => <span className="cell-muted" style={{ fontSize: 'var(--fs-sm)' }}>{r.student.email}</span> },
     {
-      key: 'year', header: 'Year', width: '90px', sortValue: (r) => r.student.year ?? 0,
-      cell: (r) => (r.student.year ? `Year ${r.student.year}` : '—'),
+      key: 'year', header: 'Year', width: 90, sortValue: (r) => r.student.year ?? 0,
+      cell: (r) => (r.student.year ? `Year ${r.student.year}` : <span className="cell-muted">—</span>),
     },
     {
-      key: 'actions', header: <span className="sr-only">Actions</span>, align: 'right', width: '110px',
+      key: 'actions', header: <span className="sr-only">Actions</span>, align: 'right', width: 110,
       cell: (r) => (
         <span className="row-actions">
           <Button size="xs" variant="danger" onClick={() => setRemoving(r)}>
@@ -100,66 +100,62 @@ export default function AdminCourseDetail() {
     },
   ];
 
+  const enrolled = roster.data?.length ?? course._count?.enrollments ?? 0;
+
   return (
     <>
       <PageHeader
-        eyebrow={course.department ?? 'Course'}
         title={course.name}
         lede={
-          <span className="row-tight" style={{ flexWrap: 'wrap' }}>
-            <Badge tone="accent">{course.code}</Badge>
-            {course.teacher ? <span className="t-sm">Taught by {course.teacher.name}</span> : <Badge tone="warning">No teacher assigned</Badge>}
+          <span className="course-facts-line">
+            <span className="t-data">{course.code}</span>
+            {course.department && <span>{course.department}</span>}
+            {course.teacher
+              ? <span>Taught by {course.teacher.name}</span>
+              : <Badge tone="warning">No teacher assigned</Badge>}
+            <span className="t-num">{enrolled} {enrolled === 1 ? 'student' : 'students'}</span>
+            <span className="t-num">{course._count?.sessions ?? 0} {course._count?.sessions === 1 ? 'session' : 'sessions'}</span>
           </span>
         }
         actions={
-          <Button variant="secondary" onClick={() => { setEnrolError(''); setEnrolOpen(true); }}>
+          <Button onClick={() => { setEnrolError(''); setEnrolOpen(true); }}>
             <IconPlus size={15} />Enrol a student
           </Button>
         }
       />
 
-      <StatGrid>
-        <Stat label="Students enrolled" value={roster.data?.length ?? course._count?.enrollments ?? 0} foot="On the roster" />
-        <Stat label="Sessions held" value={course._count?.sessions ?? 0} foot="All time" />
-        <Stat label="Teacher" value={course.teacher ? course.teacher.name.split(' ')[0]! : '—'} foot={course.teacher?.name ?? 'Assign one from the courses list'} />
-        <Stat label="Department" value={course.department ?? '—'} foot="Faculty grouping" />
-      </StatGrid>
-
-      <div className="section">
-        <Card className="card-flush">
-          <CardHead title="Roster" sub="Students enrolled in this course" />
-          <DataTable
-            rows={roster.data}
-            columns={columns}
-            getRowId={(r) => r.student.id}
-            loading={roster.isLoading}
-            error={roster.isError || undefined}
-            onRetry={() => void roster.refetch()}
-            caption="Enrolled students"
-            search={{ placeholder: 'Search students', match: (r) => `${r.student.name} ${r.student.email}` }}
-            pageSize={12}
-            mobileCard={(r) => (
-              <div className="record">
-                <Avatar name={r.student.name} size="sm" />
-                <div className="record-main">
-                  <div className="record-title">{r.student.name}</div>
-                  <div className="record-meta">{r.student.email}</div>
-                </div>
-                <Button size="xs" variant="danger" onClick={() => setRemoving(r)} aria-label={`Remove ${r.student.name}`}>
-                  <IconTrash size={13} />
-                </Button>
+      <div className="table-frame">
+        <DataTable
+          rows={roster.data}
+          columns={columns}
+          getRowId={(r) => r.student.id}
+          loading={roster.isLoading}
+          error={roster.isError || undefined}
+          onRetry={() => void roster.refetch()}
+          caption="Enrolled students"
+          search={{ placeholder: 'Search students', match: (r) => `${r.student.name} ${r.student.email}` }}
+          pageSize={15}
+          mobileCard={(r) => (
+            <div className="record">
+              <Avatar name={r.student.name} size="sm" />
+              <div className="record-main">
+                <div className="record-title">{r.student.name}</div>
+                <div className="record-meta">{r.student.email}</div>
               </div>
-            )}
-            empty={
-              <EmptyState
-                icon={<IconUsers size={20} />}
-                title="No students enrolled"
-                description="Enrol students by their account email. They can join this course's sessions immediately afterwards."
-                action={<Button size="sm" onClick={() => setEnrolOpen(true)}><IconPlus size={14} />Enrol a student</Button>}
-              />
-            }
-          />
-        </Card>
+              <Button size="xs" variant="danger" onClick={() => setRemoving(r)} aria-label={`Remove ${r.student.name}`}>
+                <IconTrash size={13} />
+              </Button>
+            </div>
+          )}
+          empty={
+            <EmptyState
+              icon={<IconUsers size={18} />}
+              title="No students enrolled"
+              description="Enrol students by their account email. They can join this course's sessions immediately afterwards."
+              action={<Button size="sm" onClick={() => setEnrolOpen(true)}><IconPlus size={14} />Enrol a student</Button>}
+            />
+          }
+        />
       </div>
 
       <Drawer
@@ -176,7 +172,7 @@ export default function AdminCourseDetail() {
       >
         <form
           id="admin-enrol"
-          className="col"
+          className="form"
           onSubmit={(e: FormEvent<HTMLFormElement>) => {
             e.preventDefault();
             setEnrolError('');

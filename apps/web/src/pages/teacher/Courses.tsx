@@ -1,73 +1,71 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import type { ClassSession, Course } from '../../lib/types';
 import {
-  Badge, EmptyState, ErrorState, LinkButton, PageHeader, Skeleton,
+  Badge, EmptyState, ErrorState, LinkButton, PageHeader, SectionHead, SimpleTable, Skeleton,
 } from '../../components/ui';
-import { IconArrowRight, IconBook, IconBroadcast, IconUsers } from '../../components/icons';
+import { IconArrowRight, IconBroadcast } from '../../components/icons';
 
 /* ============================================================
    Courses you teach
-   Each card answers the two questions a teacher has before a
-   class: how many students, and is anything running.
+   One row per course: how many students, how many sessions,
+   and whether anything is running right now.
    ============================================================ */
 export default function TeacherCourses() {
+  const navigate = useNavigate();
   const courses = useQuery({ queryKey: ['courses'], queryFn: () => api.get<Course[]>('/courses') });
   const sessions = useQuery({ queryKey: ['sessions'], queryFn: () => api.get<ClassSession[]>('/sessions') });
 
   const liveByCourse = new Set(
     sessions.data?.filter((s) => s.status === 'LIVE').map((s) => s.courseId) ?? [],
   );
+  const list = [...(courses.data ?? [])].sort((a, b) => a.code.localeCompare(b.code));
+  const students = list.reduce((n, c) => n + (c._count?.enrollments ?? 0), 0);
 
   return (
     <>
       <PageHeader
-        eyebrow="Teaching"
-        title="My courses"
-        lede="Every course assigned to you, with enrolment and session history."
-        actions={<LinkButton to="/teacher/live"><IconBroadcast size={16} />Start a session</LinkButton>}
+        title="Courses"
+        lede={courses.data ? `${list.length} ${list.length === 1 ? 'course' : 'courses'} · ${students} enrolled students` : 'Every course assigned to you.'}
+        actions={<LinkButton to="/teacher/live" size="lg"><IconBroadcast size={15} />Start a session</LinkButton>}
       />
 
-      {courses.isLoading ? (
-        <div className="course-grid">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} h={168} className="sk-block" />)}
-        </div>
-      ) : courses.isError ? (
-        <ErrorState onRetry={() => void courses.refetch()} />
-      ) : !courses.data?.length ? (
-        <EmptyState
-          icon={<IconBook size={20} />}
-          title="No courses assigned to you"
-          description="An administrator assigns teachers to courses. Once you are assigned, the course appears here and you can start running sessions."
-        />
-      ) : (
-        <div className="course-grid">
-          {courses.data.map((c) => (
-            <Link key={c.id} to={`/teacher/courses/${c.id}`} className="card card-link course-card">
-              <div className="course-card-top">
-                <span className="course-code">{c.code}</span>
-                {liveByCourse.has(c.id) ? <Badge tone="live">Live</Badge>
-                  : c.department ? <Badge tone="neutral">{c.department}</Badge> : null}
-              </div>
-              <h3 className="course-name t-clamp-2">{c.name}</h3>
-
-              <dl className="course-facts">
-                <div>
-                  <dt><IconUsers size={13} />Students</dt>
-                  <dd className="t-num">{c._count?.enrollments ?? 0}</dd>
-                </div>
-                <div>
-                  <dt><IconBroadcast size={13} />Sessions</dt>
-                  <dd className="t-num">{c._count?.sessions ?? 0}</dd>
-                </div>
-              </dl>
-
-              <span className="course-cta">Manage course<IconArrowRight size={14} /></span>
-            </Link>
-          ))}
-        </div>
-      )}
+      <section>
+        <SectionHead title="Assigned to you" />
+        {courses.isLoading ? (
+          <Skeleton h={160} className="sk-block" />
+        ) : courses.isError ? (
+          <ErrorState onRetry={() => void courses.refetch()} />
+        ) : !list.length ? (
+          <EmptyState
+            row bare
+            title="No courses assigned to you"
+            description="An administrator assigns teachers to courses. Once assigned, the course appears here and you can run sessions."
+          />
+        ) : (
+          <SimpleTable
+            bare
+            rows={list}
+            getRowId={(c) => c.id}
+            onRowClick={(c) => navigate(`/teacher/courses/${c.id}`)}
+            caption="Courses you teach"
+            columns={[
+              { key: 'code', header: 'Code', width: 96, cell: (c) => <span className="cell-data">{c.code}</span> },
+              { key: 'name', header: 'Course', cell: (c) => <Link to={`/teacher/courses/${c.id}`} className="cell-primary">{c.name}</Link> },
+              { key: 'dept', header: 'Department', width: 170, secondary: true, cell: (c) => c.department ?? <span className="cell-muted">—</span> },
+              { key: 'students', header: 'Students', width: 96, align: 'right', cell: (c) => c._count?.enrollments ?? 0 },
+              { key: 'sessions', header: 'Sessions', width: 96, align: 'right', cell: (c) => c._count?.sessions ?? 0 },
+              { key: 'status', header: 'Status', width: 90, cell: (c) => (
+                liveByCourse.has(c.id) ? <Badge tone="live">Live</Badge> : <span className="cell-muted">Idle</span>
+              ) },
+              { key: 'go', header: '', width: 100, align: 'right', cell: (c) => (
+                <Link to={`/teacher/courses/${c.id}`} className="section-link">Manage<IconArrowRight /></Link>
+              ) },
+            ]}
+          />
+        )}
+      </section>
     </>
   );
 }

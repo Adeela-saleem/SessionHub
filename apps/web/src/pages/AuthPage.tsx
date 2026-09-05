@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { ApiError } from '../lib/api';
+import { ApiError, NetworkError } from '../lib/api';
+import { NAME_HINT, NAME_PATTERN, NAME_RULE } from '../lib/limits';
 import { ThemeToggle } from '../components/ThemeToggle';
 import {
-  Banner, Button, PasswordField, Segmented, SelectField, TextField,
+  Banner, Button, PasswordField, Segmented, SelectField, Tabs, TextField,
 } from '../components/ui';
-import { IconArrowLeft, IconCheck, IconShield } from '../components/icons';
+import { IconArrowLeft } from '../components/icons';
 
 type Mode = 'login' | 'signup';
 
@@ -17,7 +18,7 @@ const COPY: Record<Mode, { title: string; sub: string; cta: string }> = {
     cta: 'Log in',
   },
   signup: {
-    title: 'Create your account',
+    title: 'Create an account',
     sub: 'Students can join a session straight away. Teaching accounts are verified by an administrator first.',
     cta: 'Create account',
   },
@@ -27,6 +28,12 @@ const PROMISES = [
   'Join a live session with a six-character code',
   'Answers scored and recorded as they arrive',
   'Attendance and accuracy tracked per course',
+];
+
+const DEMO = [
+  { email: 'admin@sessionhub.edu', role: 'Administrator' },
+  { email: 'teacher@sessionhub.edu', role: 'Teacher' },
+  { email: 'ada@sessionhub.edu', role: 'Student' },
 ];
 
 /** Field-level errors the API reports, mapped back onto inputs. */
@@ -40,7 +47,11 @@ function fieldFor(message: string): 'email' | 'password' | null {
 export default function AuthPage() {
   const { login, signup } = useAuth();
 
-  const [mode, setMode] = useState<Mode>('login');
+  // Signup-intent links across the site arrive as /auth?mode=signup; a bare
+  // /auth still lands on login. Read once — switching tabs in-page need not
+  // rewrite the URL.
+  const [params] = useSearchParams();
+  const [mode, setMode] = useState<Mode>(params.get('mode') === 'signup' ? 'signup' : 'login');
   const [role, setRole] = useState<'STUDENT' | 'TEACHER'>('STUDENT');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -59,9 +70,14 @@ export default function AuthPage() {
       if (mode === 'login') {
         await login(String(f.get('email')), String(f.get('password')));
       } else {
+        const name = String(f.get('name')).trim();
+        if (name.length < 2 || !NAME_RULE.test(name)) {
+          setError(NAME_HINT);
+          return;
+        }
         const res = await signup({
           email: String(f.get('email')),
-          name: String(f.get('name')),
+          name,
           password: String(f.get('password')),
           role,
           department: String(f.get('department') || '') || undefined,
@@ -75,7 +91,11 @@ export default function AuthPage() {
         }
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+      setError(
+        err instanceof ApiError || err instanceof NetworkError
+          ? err.message
+          : 'Something went wrong. Please try again.',
+      );
     } finally {
       setBusy(false);
     }
@@ -89,7 +109,7 @@ export default function AuthPage() {
       {/* ── Brand panel ─────────────────────────────────── */}
       <aside className="auth-aside">
         <div className="auth-aside-inner">
-          <Link to="/" className="lp-logo auth-aside-logo">
+          <Link to="/" className="auth-aside-logo">
             <span className="brand-mark" aria-hidden="true">S</span>
             <span>SessionHub</span>
           </Link>
@@ -97,23 +117,24 @@ export default function AuthPage() {
           <div>
             <h2 className="auth-aside-title">The lecture hall, finally in sync.</h2>
             <ul className="auth-promises">
-              {PROMISES.map((p) => (
-                <li key={p}><IconCheck size={15} />{p}</li>
-              ))}
+              {PROMISES.map((p) => <li key={p}>{p}</li>)}
             </ul>
           </div>
 
           <div className="auth-demo">
-            <div className="row-tight" style={{ marginBottom: 'var(--s-3)' }}>
-              <IconShield size={15} />
-              <span className="t-label" style={{ color: 'inherit' }}>Demo access</span>
-            </div>
-            <ul>
-              <li><code>admin@sessionhub.edu</code><span>Administrator</span></li>
-              <li><code>teacher@sessionhub.edu</code><span>Teacher</span></li>
-              <li><code>ada@sessionhub.edu</code><span>Student</span></li>
-            </ul>
-            <p>Every demo account uses the password <code>Password123!</code></p>
+            <span className="auth-demo-label">Demo access</span>
+            <dl className="auth-demo-list">
+              {DEMO.map((d) => (
+                <div key={d.email}>
+                  <dt>{d.role}</dt>
+                  <dd><code>{d.email}</code></dd>
+                </div>
+              ))}
+              <div>
+                <dt>Password</dt>
+                <dd><code>Password123!</code></dd>
+              </div>
+            </dl>
           </div>
         </div>
       </aside>
@@ -122,35 +143,33 @@ export default function AuthPage() {
       <main className="auth-main" id="main">
         <div className="auth-main-top">
           <Link to="/" className="btn btn-tertiary btn-sm">
-            <IconArrowLeft size={15} />Back to site
+            <IconArrowLeft size={14} />Back to site
           </Link>
           <ThemeToggle />
         </div>
 
         <div className="auth-form-wrap">
+          <Tabs
+            label="Authentication mode"
+            value={mode}
+            onChange={switchMode}
+            items={[{ value: 'login', label: 'Log in' }, { value: 'signup', label: 'Sign up' }]}
+          />
+
           <div className="auth-intro">
             <h1>{copy.title}</h1>
             <p>{copy.sub}</p>
           </div>
 
-          <Segmented
-            block
-            label="Authentication mode"
-            value={mode}
-            onChange={switchMode}
-            options={[{ value: 'login', label: 'Log in' }, { value: 'signup', label: 'Sign up' }]}
-          />
-
-          {error && <Banner tone="error" title="We could not continue">{error}</Banner>}
+          {error && <Banner tone="error" title="Could not continue">{error}</Banner>}
           {notice && <Banner tone="success" title="Account created">{notice}</Banner>}
 
-          <form onSubmit={onSubmit} noValidate className="auth-form">
+          <form onSubmit={onSubmit} noValidate className="form auth-form">
             {mode === 'signup' && (
               <>
                 <div className="field">
                   <span className="field-label">I am a</span>
                   <Segmented
-                    block
                     label="Account type"
                     value={role}
                     onChange={setRole}
@@ -159,8 +178,10 @@ export default function AuthPage() {
                 </div>
 
                 <TextField
-                  label="Full name" name="name" required minLength={2}
+                  label="Full name" name="name" required minLength={2} maxLength={80}
+                  pattern={NAME_PATTERN} title={NAME_HINT}
                   autoComplete="name" placeholder="Ayesha Rahman"
+                  hint="Letters only, no numbers."
                 />
               </>
             )}
@@ -182,7 +203,7 @@ export default function AuthPage() {
             />
 
             {mode === 'signup' && (
-              <div className="grid-2">
+              <div className="form-row">
                 <TextField label="Department" name="department" optional placeholder="Computer Science" />
                 {role === 'STUDENT' && (
                   <SelectField label="Year of study" name="year" defaultValue="1">
@@ -193,8 +214,8 @@ export default function AuthPage() {
             )}
 
             {mode === 'signup' && role === 'TEACHER' && (
-              <Banner tone="info" title="Teaching accounts are reviewed">
-                You can create the account now, but an administrator has to approve it before your first sign-in.
+              <Banner tone="info" title="Reviewed before first sign-in">
+                An administrator approves teaching accounts before they can sign in.
               </Banner>
             )}
 
@@ -207,6 +228,26 @@ export default function AuthPage() {
               {mode === 'login' ? 'Create one' : 'Log in instead'}
             </button>
           </p>
+
+          {/* Below 900px the brand aside is hidden, so the demo credentials
+              keep a compact seat on the form side. */}
+          <div className="auth-mobile">
+            <details className="auth-mobile-demo">
+              <summary>Demo access</summary>
+              <dl className="auth-demo-list">
+                {DEMO.map((d) => (
+                  <div key={d.email}>
+                    <dt>{d.role}</dt>
+                    <dd><code>{d.email}</code></dd>
+                  </div>
+                ))}
+                <div>
+                  <dt>Password</dt>
+                  <dd><code>Password123!</code></dd>
+                </div>
+              </dl>
+            </details>
+          </div>
         </div>
       </main>
     </div>

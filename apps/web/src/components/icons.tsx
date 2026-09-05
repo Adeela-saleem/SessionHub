@@ -119,10 +119,14 @@ export const IconInfo = (p: IconProps) => (<Icon {...p}><circle cx="12" cy="12" 
 export const IconInbox = (p: IconProps) => (<Icon {...p}><path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z" /></Icon>);
 export const IconOffline = (p: IconProps) => (<Icon {...p}><path d="M3 3l18 18" /><path d="M8.6 15.3a5 5 0 0 1 6.8 0" /><path d="M5 11.8a10 10 0 0 1 3.4-2.2M19 11.8a10 10 0 0 0-6.6-2.6" /><path d="M1.8 8.5a15 15 0 0 1 4-2.7M22.2 8.5a15 15 0 0 0-9.3-3.4" /><circle cx="12" cy="19" r="0.9" fill="currentColor" stroke="none" /></Icon>);
 export const IconLock = (p: IconProps) => (<Icon {...p}><rect x="4" y="10" width="16" height="11" rx="2.5" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></Icon>);
+export const IconAward2 = (p: IconProps) => (<Icon {...p}><circle cx="12" cy="9" r="5.5" /><path d="m8.8 13.5-1.3 7 4.5-2.6 4.5 2.6-1.3-7" /></Icon>);
 export const IconShield = (p: IconProps) => (<Icon {...p}><path d="M12 3l7.5 3v5.6c0 4.5-3 8-7.5 9.4-4.5-1.4-7.5-4.9-7.5-9.4V6z" /><path d="m9 12 2.2 2.2L15.4 10" /></Icon>);
 export const IconTarget = (p: IconProps) => (<Icon {...p}><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /></Icon>);
 export const IconZap = (p: IconProps) => (<Icon {...p}><path d="M13.5 2 4 13.5h6.5L10 22l9.5-11.5H13z" /></Icon>);
 export const IconAward = (p: IconProps) => (<Icon {...p}><circle cx="12" cy="9" r="6" /><path d="m8.2 14.2-1.4 7L12 18.6l5.2 2.6-1.4-7" /></Icon>);
+export const IconPhone = (p: IconProps) => (
+  <Icon {...p}><rect x="6.5" y="2" width="11" height="20" rx="2.5" /><path d="M10.5 5.4h3" /><path d="M11 18.6h2" /></Icon>
+);
 export const IconMail = (p: IconProps) => (<Icon {...p}><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="m3.6 6.5 7.3 5.5a2 2 0 0 0 2.2 0l7.3-5.5" /></Icon>);
 export const IconHelp = (p: IconProps) => (<Icon {...p}><circle cx="12" cy="12" r="9" /><path d="M9.6 9.4a2.5 2.5 0 1 1 3.3 2.4c-.6.2-.9.8-.9 1.4v.5" /><circle cx="12" cy="16.6" r="0.9" fill="currentColor" stroke="none" /></Icon>);
 
@@ -133,7 +137,7 @@ export const ICONS = {
   sparkle: IconSparkle, message: IconMessage, calendar: IconCalendar,
   settings: IconSettings, grad: IconGrad, file: IconFile, clipboard: IconClipboard,
   building: IconBuilding, target: IconTarget, award: IconAward, clock: IconClock,
-  shield: IconShield, inbox: IconInbox,
+  shield: IconShield, inbox: IconInbox, bell: IconBell, award2: IconAward2,
 } as const;
 
 export type IconName = keyof typeof ICONS;

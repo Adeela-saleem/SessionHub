@@ -56,7 +56,8 @@ export function Modal({ open, onClose, title, description, children, footer, siz
   open: boolean; onClose: () => void;
   title: string; description?: ReactNode;
   children?: ReactNode; footer?: ReactNode;
-  size?: 'md' | 'lg';
+  /** sm 400 · md 560 · lg 800. Defaults to sm: most decisions are short. */
+  size?: 'sm' | 'md' | 'lg';
 }) {
   const ref = useOverlay(open, onClose);
   if (!open) return null;
@@ -65,7 +66,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
     <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div
         ref={ref}
-        className={`modal ${size === 'lg' ? 'modal-lg' : ''}`.trim()}
+        className={`modal ${size === 'lg' ? 'modal-lg' : size === 'md' ? 'modal-md' : ''}`.trim()}
         role="dialog" aria-modal="true" aria-labelledby="modal-title"
         style={{ position: 'relative' }}
       >

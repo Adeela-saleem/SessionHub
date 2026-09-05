@@ -1,20 +1,19 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import type { Course, StudentAnalytics } from '../../lib/types';
 import {
-  Badge, EmptyState, ErrorState, LinkButton, PageHeader, Progress,
-  SearchInput, Segmented, Skeleton,
+  EmptyState, ErrorState, PageHeader, Progress, SearchInput, Segmented, SimpleTable, Skeleton,
 } from '../../components/ui';
-import { IconArrowRight, IconBook, IconUsers } from '../../components/icons';
 
 /* ============================================================
    My courses
-   A catalogue view: what am I in, who teaches it, and how am I
-   tracking. Filtering is one control, not a filter panel.
+   A register: what am I in, who teaches it, how am I tracking.
+   One table, one search, one sort — no card grid.
    ============================================================ */
 export default function StudentCourses() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<'code' | 'attendance'>('code');
 
@@ -42,87 +41,74 @@ export default function StudentCourses() {
   return (
     <>
       <PageHeader
-        eyebrow="Learning"
         title="My courses"
-        lede="Every course you are enrolled in, with your attendance in each."
+        lede={courses.data ? `${courses.data.length} enrolled` : undefined}
       />
 
-      <div className="toolbar-row">
+      <div className="toolbar">
         <SearchInput
           value={query}
           onValueChange={setQuery}
           placeholder="Search by code, title or teacher"
-          className="toolbar-search"
         />
-        <Segmented
-          label="Sort courses"
-          value={sort}
-          onChange={setSort}
-          options={[{ value: 'code', label: 'By code' }, { value: 'attendance', label: 'By attendance' }]}
-        />
+        <div className="toolbar-end">
+          <Segmented
+            label="Sort courses"
+            value={sort}
+            onChange={setSort}
+            options={[{ value: 'code', label: 'By code' }, { value: 'attendance', label: 'By attendance' }]}
+          />
+        </div>
       </div>
 
       {courses.isLoading ? (
-        <div className="course-grid">
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} h={168} className="sk-block" />)}
-        </div>
+        <Skeleton h={160} className="sk-block" />
       ) : courses.isError ? (
         <ErrorState onRetry={() => void courses.refetch()} />
       ) : !courses.data?.length ? (
         <EmptyState
-          icon={<IconBook size={20} />}
+          row bare
           title="You are not enrolled in anything yet"
-          description="Courses appear here once an administrator or your teacher adds you to them. This usually happens in the first week of term."
+          description="Courses appear here once an administrator or your teacher adds you to them."
         />
       ) : !list.length ? (
         <EmptyState
-          tight
+          row bare
           title={`No courses match “${query}”`}
           description="Try a course code such as CS-204, or clear the search."
         />
       ) : (
-        <div className="course-grid">
-          {list.map((c) => {
-            const stat = rateFor.get(c.code);
-            return (
-              <Link to={`/student/courses/${c.id}`} key={c.id} className="card card-link course-card">
-                <div className="course-card-top">
-                  <span className="course-code">{c.code}</span>
-                  {c.department && <Badge tone="neutral">{c.department}</Badge>}
-                </div>
-                <h3 className="course-name t-clamp-2">{c.name}</h3>
-                <p className="course-teacher">
-                  <IconUsers size={14} />
-                  {c.teacher?.name ?? 'Teacher not assigned'}
-                </p>
-
-                <div className="course-progress">
-                  <div className="row-between">
-                    <span className="t-caption t-muted">Attendance</span>
-                    <span className="t-caption t-num">
-                      {stat ? `${stat.attended} of ${stat.total} sessions` : 'No sessions yet'}
-                    </span>
-                  </div>
-                  <Progress
-                    value={stat?.rate ?? 0}
-                    tone={!stat ? 'foundation' : stat.rate >= 75 ? 'success' : stat.rate >= 45 ? 'warning' : 'danger'}
-                    label={`${c.code} attendance`}
-                  />
-                </div>
-
-                <span className="course-cta">Open course<IconArrowRight size={14} /></span>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-
-      {!!list.length && (
-        <div className="section">
-          <LinkButton to="/student/progress" variant="secondary" size="sm">
-            See your full progress report
-          </LinkButton>
-        </div>
+        <SimpleTable
+          bare
+          className="tbl-wide"
+          rows={list}
+          getRowId={(c) => c.id}
+          onRowClick={(c) => navigate(`/student/courses/${c.id}`)}
+          caption="Courses you are enrolled in"
+          columns={[
+            { key: 'code', header: 'Code', width: 96, cell: (c) => <span className="cell-data">{c.code}</span> },
+            { key: 'name', header: 'Course', cell: (c) => (
+              <span className="cell-stack">
+                <Link to={`/student/courses/${c.id}`} className="cell-primary t-clamp-1">{c.name}</Link>
+                {c.department && <span className="cell-sub">{c.department}</span>}
+              </span>
+            ) },
+            { key: 'teacher', header: 'Teacher', width: 180, secondary: true, cell: (c) => c.teacher?.name ?? <span className="cell-muted">Unassigned</span> },
+            { key: 'sessions', header: 'Sessions', width: 110, align: 'right', cell: (c) => {
+              const s = rateFor.get(c.code);
+              return s ? <span className="t-num">{s.attended} of {s.total}</span> : <span className="cell-muted">—</span>;
+            } },
+            { key: 'attendance', header: 'Attendance', width: 190, cell: (c) => {
+              const s = rateFor.get(c.code);
+              return s ? (
+                <span className="cell-progress">
+                  <Progress value={s.rate} tone={s.rate >= 75 ? 'success' : s.rate >= 45 ? 'warning' : 'danger'} label={`${c.code} attendance`} />
+                  <span className="t-num">{s.rate}%</span>
+                </span>
+              ) : <span className="cell-muted">No sessions yet</span>;
+            } },
+          ]}
+        />
       )}
     </>
   );

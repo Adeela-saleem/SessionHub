@@ -5,12 +5,18 @@ import { api, ApiError } from '../../lib/api';
 import type { ClassSession, Course, RosterEntry } from '../../lib/types';
 import { usePageDetail } from '../../components/shell/AppShell';
 import {
-  Avatar, Badge, Banner, Button, Card, CardHead, ConfirmDialog, DataTable,
-  Drawer, EmptyState, ErrorState, LinkButton, PageHeader, PanelRow, Skeleton,
-  Stat, StatGrid, TextField, useToast, type Column,
+  Avatar, Badge, Banner, Button, ConfirmDialog, DataTable, Drawer, EmptyState, ErrorState,
+  LinkButton, PageHeader, SectionHead, SimpleTable, Skeleton, Stat, StatGrid, TextField,
+  useToast, type Column,
 } from '../../components/ui';
-import { IconBroadcast, IconClock, IconPlus, IconTrash, IconUsers } from '../../components/icons';
-import { formatDate } from '../../lib/format';
+import { IconBook, IconBroadcast, IconPlus, IconTrash } from '../../components/icons';
+import { formatDate, formatDayDate } from '../../lib/format';
+import { AnnouncementsCard } from '../../features/announcements/AnnouncementsCard';
+
+/** The courses and sessions endpoints return the full records; the
+    shared types omit their timestamps, so they are re-declared here. */
+type CourseRecord = Course & { createdAt?: string };
+type SessionRecord = ClassSession & { startedAt?: string | null; createdAt?: string };
 
 /* ============================================================
    Course management
@@ -26,8 +32,8 @@ export default function TeacherCourseDetail() {
   const [enrolError, setEnrolError] = useState('');
   const [removing, setRemoving] = useState<RosterEntry | null>(null);
 
-  const courses = useQuery({ queryKey: ['courses'], queryFn: () => api.get<Course[]>('/courses') });
-  const sessions = useQuery({ queryKey: ['sessions'], queryFn: () => api.get<ClassSession[]>('/sessions') });
+  const courses = useQuery({ queryKey: ['courses'], queryFn: () => api.get<CourseRecord[]>('/courses') });
+  const sessions = useQuery({ queryKey: ['sessions'], queryFn: () => api.get<SessionRecord[]>('/sessions') });
   const roster = useQuery({
     queryKey: ['roster', id],
     queryFn: () => api.get<RosterEntry[]>(`/courses/${id}/roster`),
@@ -70,7 +76,7 @@ export default function TeacherCourseDetail() {
       <EmptyState
         title="Course not found"
         description="This course may have been removed, or you are no longer assigned to it."
-        action={<LinkButton to="/teacher/courses" variant="secondary" size="sm">Back to my courses</LinkButton>}
+        action={<LinkButton to="/teacher/courses" variant="secondary" size="sm">Back to courses</LinkButton>}
       />
     );
   }
@@ -84,7 +90,7 @@ export default function TeacherCourseDetail() {
       header: 'Student',
       sortValue: (r) => r.student.name,
       cell: (r) => (
-        <span className="row-tight">
+        <span className="cell-user">
           <Avatar name={r.student.name} size="sm" />
           <span className="cell-primary">{r.student.name}</span>
         </span>
@@ -92,12 +98,12 @@ export default function TeacherCourseDetail() {
     },
     { key: 'email', header: 'Email', sortValue: (r) => r.student.email, cell: (r) => r.student.email },
     {
-      key: 'year', header: 'Year', width: '90px',
+      key: 'year', header: 'Year', width: 80, align: 'right',
       sortValue: (r) => r.student.year ?? 0,
-      cell: (r) => (r.student.year ? `Year ${r.student.year}` : '—'),
+      cell: (r) => (r.student.year ? r.student.year : <span className="cell-muted">—</span>),
     },
     {
-      key: 'actions', header: <span className="sr-only">Actions</span>, align: 'right', width: '110px',
+      key: 'actions', header: <span className="sr-only">Actions</span>, align: 'right', width: 110,
       cell: (r) => (
         <span className="row-actions">
           <Button size="xs" variant="danger" onClick={() => setRemoving(r)}>
@@ -111,33 +117,54 @@ export default function TeacherCourseDetail() {
   return (
     <>
       <PageHeader
-        eyebrow={course.department ?? 'Course'}
         title={course.name}
-        lede={<Badge tone="accent">{course.code}</Badge>}
+        lede={<><span className="t-data">{course.code}</span>{course.department ? ` · ${course.department}` : ''}{course.createdAt ? ` · created ${formatDate(course.createdAt)}` : ''}</>}
         actions={
           <>
+            <LinkButton to={`/teacher/courses/${id}/content`} variant="secondary">
+              <IconBook size={15} />Content
+            </LinkButton>
             <Button variant="secondary" onClick={() => { setEnrolError(''); setEnrolOpen(true); }}>
-              <IconPlus size={15} />Enrol a student
+              <IconPlus size={15} />Enrol student
             </Button>
-            <LinkButton to="/teacher/live"><IconBroadcast size={15} />{live ? 'Resume session' : 'Start a session'}</LinkButton>
+            <LinkButton to="/teacher/live" size="lg"><IconBroadcast size={15} />{live ? 'Resume session' : 'Start a session'}</LinkButton>
           </>
         }
       />
 
+      {live && (
+        <div className="now-strip">
+          <span className="now-dot" aria-hidden="true" />
+          <div className="grow">
+            <span className="now-title">A session is live in this course</span>
+            <span className="now-meta">Room <span className="t-data">{live.roomCode}</span> · {live._count?.attendance ?? 0} joined</span>
+          </div>
+          <LinkButton to="/teacher/live" size="sm" variant="secondary">Open classroom</LinkButton>
+        </div>
+      )}
+
       <StatGrid>
-        <Stat label="Students enrolled" value={roster.data?.length ?? course._count?.enrollments ?? 0} foot="On the roster" />
-        <Stat label="Sessions held" value={courseSessions.length} foot="In this course" />
+        <Stat label="Students" value={roster.data?.length ?? course._count?.enrollments ?? 0} foot="On the roster" />
+        <Stat label="Sessions" value={courseSessions.length} foot="Held in this course" />
         <Stat
           label="Questions asked"
           value={courseSessions.reduce((n, s) => n + (s._count?.questions ?? 0), 0)}
           foot="Across all sessions"
         />
-        <Stat label="Status" value={live ? 'Live now' : 'Idle'} foot={live ? `Room ${live.roomCode}` : 'No session running'} />
+        <Stat
+          label="Attendance"
+          value={courseSessions.reduce((n, s) => n + (s._count?.attendance ?? 0), 0)}
+          foot="Total joins"
+        />
       </StatGrid>
 
-      <div className="section">
-        <Card className="card-flush">
-          <CardHead title="Roster" sub="Students enrolled in this course" />
+      <section className="section">
+        <SectionHead
+          title="Roster"
+          sub={roster.data ? `${roster.data.length} enrolled` : undefined}
+          action={<Button size="sm" variant="secondary" onClick={() => { setEnrolError(''); setEnrolOpen(true); }}><IconPlus size={14} />Enrol</Button>}
+        />
+        <div className="table-frame">
           <DataTable
             rows={roster.data}
             columns={columns}
@@ -162,49 +189,50 @@ export default function TeacherCourseDetail() {
             )}
             empty={
               <EmptyState
-                icon={<IconUsers size={20} />}
+                tight
                 title="No students enrolled"
-                description="Enrol students by their account email address. They can join this course’s sessions as soon as they are on the roster."
+                description="Enrol students by their account email. They can join this course’s sessions as soon as they are on the roster."
                 action={<Button size="sm" onClick={() => setEnrolOpen(true)}><IconPlus size={14} />Enrol a student</Button>}
               />
             }
           />
-        </Card>
-      </div>
+        </div>
+      </section>
 
-      <div className="section">
-        <Card>
-          <CardHead title="Session history" sub="Every class you have run in this course" />
+      <div className="split section">
+        <section>
+          <SectionHead title="Session history" sub={courseSessions.length ? `${courseSessions.length} sessions` : undefined} />
           {!courseSessions.length ? (
             <EmptyState
-              tight
-              icon={<IconClock size={20} />}
+              row bare
               title="No sessions yet"
-              description="Start your first session and it will be recorded here with attendance and question counts."
+              description="Start your first session and it is recorded here with attendance and question counts."
             />
           ) : (
-            <div>
-              {courseSessions.map((s) => (
-                <PanelRow key={s.id}>
-                  <div className="grow" style={{ minWidth: 0 }}>
-                    <div className="record-title t-clamp-1">{s.title ?? `${course.code} session`}</div>
-                    <div className="record-meta">
-                      Room {s.roomCode} · {s._count?.attendance ?? 0} attended · {s._count?.questions ?? 0} questions
-                    </div>
-                  </div>
+            <SimpleTable
+              bare
+              rows={courseSessions}
+              getRowId={(s) => s.id}
+              caption="Sessions in this course"
+              columns={[
+                { key: 'title', header: 'Session', cell: (s) => <span className="cell-primary t-clamp-1">{s.title ?? course.name}</span> },
+                { key: 'date', header: 'Date', width: 130, cell: (s) => formatDayDate(s.startedAt ?? s.createdAt) },
+                { key: 'att', header: 'Attended', width: 90, align: 'right', cell: (s) => s._count?.attendance ?? 0 },
+                { key: 'q', header: 'Questions', width: 90, align: 'right', secondary: true, cell: (s) => s._count?.questions ?? 0 },
+                { key: 'status', header: '', width: 90, align: 'right', cell: (s) => (
                   <Badge tone={s.status === 'LIVE' ? 'live' : s.status === 'CLOSED' ? 'neutral' : 'info'}>
                     {s.status === 'LIVE' ? 'Live' : s.status === 'CLOSED' ? 'Finished' : 'Scheduled'}
                   </Badge>
-                </PanelRow>
-              ))}
-            </div>
+                ) },
+              ]}
+            />
           )}
-        </Card>
-      </div>
+        </section>
 
-      <p className="t-caption t-muted" style={{ marginTop: 'var(--s-6)' }}>
-        Course created {formatDate(new Date())} · Only an administrator can rename or reassign this course.
-      </p>
+        <div>
+          <AnnouncementsCard courseId={id!} canPost />
+        </div>
+      </div>
 
       {/* ── Enrolment ─────────────────────────────────── */}
       <Drawer
@@ -221,7 +249,7 @@ export default function TeacherCourseDetail() {
       >
         <form
           id="enrol-form"
-          className="col"
+          className="form"
           onSubmit={(e: FormEvent<HTMLFormElement>) => {
             e.preventDefault();
             setEnrolError('');

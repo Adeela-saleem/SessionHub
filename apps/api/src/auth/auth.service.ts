@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException, Injectable, UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -61,6 +62,34 @@ export class AuthService {
     return this.issueTokens(user);
   }
 
+  /**
+   * Changing a password invalidates every refresh token the account
+   * holds — if the old password leaked, sessions opened with it must
+   * not survive. A fresh pair is issued so the caller stays signed in
+   * on this device only.
+   */
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('Session expired, please sign in again');
+
+    const ok = await argonVerify(user.passwordHash, currentPassword).catch(() => false);
+    if (!ok) throw new UnauthorizedException('Your current password is not correct');
+
+    const same = await argonVerify(user.passwordHash, newPassword).catch(() => false);
+    if (same) throw new BadRequestException('Choose a password you have not used here before');
+
+    const passwordHash = await argonHash(newPassword);
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+
+    return this.issueTokens(user);
+  }
+
   async refresh(rawToken: string) {
     const tokenHash = sha256(rawToken);
     const stored = await this.prisma.refreshToken.findUnique({
@@ -68,8 +97,21 @@ export class AuthService {
       include: { user: true },
     });
 
-    if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
+    if (!stored || stored.expiresAt < new Date()) {
       throw new UnauthorizedException('Session expired, please sign in again');
+    }
+
+    if (stored.revokedAt) {
+      // Two tabs share one stored token: both boot, both present it, and
+      // strict rotation would log the slower tab out. A short replay
+      // grace keeps rotation's theft protection while letting the
+      // concurrent tab through; outside the window it is still a hard
+      // failure.
+      const graceMs = 30_000;
+      if (Date.now() - stored.revokedAt.getTime() > graceMs) {
+        throw new UnauthorizedException('Session expired, please sign in again');
+      }
+      return this.issueTokens(stored.user);
     }
 
     // Rotate: the presented token is burned as the new pair is issued.
@@ -113,6 +155,7 @@ export class AuthService {
       user: {
         id: user.id, email: user.email, name: user.name,
         role: user.role, department: user.department, avatarUrl: user.avatarUrl,
+        createdAt: user.createdAt,
       },
     };
   }

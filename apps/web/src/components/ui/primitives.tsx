@@ -106,8 +106,12 @@ export function Avatar({ name, src, size = 'md', accent, className = '' }: {
   const initials = (name ?? '')
     .split(' ').filter(Boolean).slice(0, 2)
     .map((w) => w[0]!.toUpperCase()).join('') || '?';
+  // A stable tone per name, so the same person is the same colour on every screen.
+  let hash = 0;
+  for (const ch of name ?? '') hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
   const cls = [
     'avatar',
+    `avatar-t${hash % 6}`,
     size !== 'md' ? `avatar-${size}` : '',
     accent ? 'avatar-accent' : '',
     className,

@@ -1,0 +1,51 @@
+/* ============================================================
+   SessionHub — student page compositions
+   Screen-specific layout only. Shared patterns belong in
+   components.css / base.css.
+   ============================================================ */
+
+/* ── Tables ──────────────────────────────────────────────── */
+/* A primary line with a muted line under it, inside a cell. */
+.cell-stack { display: block; min-width: 0; }
+.cell-stack > * { display: block; }
+/* Below the tablet breakpoint a fixed-column table scrolls inside
+   its wrap instead of squeezing every column to a sliver. */
+@media (max-width: 860px) {
+  .tbl-wide table { min-width: 620px; }
+}
+
+/* ── Course detail: lesson cell with its completion tick ──── */
+.lesson-cell { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
+.lesson-cell > span:last-child { display: block; min-width: 0; }
+.lesson-cell .cell-sub { display: block; }
+
+/* ── Assignment detail ──────────────────────────────────── */
+.prose-block {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.feedback-block { margin-top: var(--s-4); display: flex; flex-direction: column; gap: var(--s-2); }
+.feedback-block .prose-block { color: var(--text-secondary); }
+
+/* ── Grades: the standing on the section line ────────────── */
+.grade-standing { display: inline-flex; align-items: center; gap: var(--s-2); }
+.grade-standing .t-num { font-size: var(--fs-body); font-weight: var(--fw-semi); color: var(--text); }
+
+/* ── Lesson player: the curriculum rail without a card ───── */
+.learn-nav-head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-3);
+  min-height: 28px;
+  margin-bottom: var(--s-2);
+}
+.learn-nav .learn-list { margin-top: var(--s-3); max-height: 60vh; }
+.learn-nav .learn-module { padding-left: 0; }
+.learn-nav .learn-item { padding-left: var(--s-2); border-radius: var(--r-sm); }
+.learn-title-row { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+.learn-title-row h1 { margin: 0; }
+.learn-head { padding: var(--s-5) var(--s-6) var(--s-4); }
+.learn-head > .t-caption { display: block; margin-bottom: var(--s-1); }
+.learn-body { padding: var(--s-6); }

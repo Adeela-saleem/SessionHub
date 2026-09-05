@@ -1,12 +1,15 @@
 /* ============================================================
    SessionHub — Design Tokens
    ------------------------------------------------------------
-   One typeface (Inter). One accent (brand yellow). One
-   foundation (brand navy). Every value below is referenced by
-   name; no component invents a colour, size or duration.
-   ============================================================ */
+   One typeface (Inter, variable). One accent (brand yellow).
+   One foundation (brand navy). Every value below is referenced
+   by name; no component invents a colour, size or duration.
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap');
+   Theming: every semantic token is defined ONCE with
+   light-dark(). The [data-theme] attribute (written by
+   lib/theme.ts) only flips color-scheme, so an explicit choice
+   wins over the OS and the two themes can never drift apart.
+   ============================================================ */
 
 :root {
   /* ── Brand: navy ────────────────────────────────────────
@@ -66,208 +69,121 @@
 }
 
 /* ============================================================
-   SEMANTIC LAYER — light
+   THEME SWITCH — the only place data-theme is consulted.
+   Default follows the OS; a stored choice pins one scheme.
+   ============================================================ */
+:root { color-scheme: light dark; }
+:root[data-theme='light'] { color-scheme: light; }
+:root[data-theme='dark']  { color-scheme: dark; }
+
+/* ============================================================
+   SEMANTIC LAYER — one definition per token, both themes.
    Components only ever reference these.
    ============================================================ */
 :root {
-  --bg:            #F7F7F5;   /* warm off-white page ground */
-  --bg-sunken:     #F1F2F0;
-  --surface:       #FFFFFF;
-  --surface-2:     #FAFAF9;
-  --surface-3:     var(--grey-100);
-  --surface-inverse: var(--navy-900);
+  --bg:              light-dark(#F7F7F5, #060C16);
+  --bg-sunken:       light-dark(#F1F2F0, #04090F);
+  --surface:         light-dark(#FFFFFF, #0C1524);
+  --surface-2:       light-dark(#FAFAF9, #111C2E);
+  --surface-3:       light-dark(var(--grey-100), #17243A);
+  --surface-inverse: light-dark(var(--navy-900), #EDF1F7);
 
-  --border:        #E6E8EC;   /* hairline, ~1.2:1 — structure not decoration */
-  --border-strong: #D2D7DE;   /* input outlines, 3:1 against surface */
-  --border-inverse: rgb(255 255 255 / 0.10);
+  --border:          light-dark(#E6E8EC, #1B2739);
+  --border-strong:   light-dark(#D2D7DE, #2C3B52);
+  --border-inverse:  light-dark(rgb(255 255 255 / 0.10), rgb(255 255 255 / 0.08));
 
-  --text:          #0B1B30;   /* 16.4:1 on surface */
-  --text-secondary:#4C5B6E;   /* 7.6:1  */
-  --text-muted:    #6B7A8C;   /* 4.6:1  — smallest legible tier */
-  --text-inverse:  #FFFFFF;
-  --text-on-accent:var(--navy-900);
+  --text:            light-dark(#0B1B30, #E9EEF6);
+  --text-secondary:  light-dark(#4C5B6E, #A3B3C8);
+  --text-muted:      light-dark(#6B7A8C, #7E8FA6);
+  --text-inverse:    light-dark(#FFFFFF, var(--navy-950));
+  --text-on-accent:  var(--navy-900);
 
-  --accent:        var(--amber-400);
-  --accent-hover:  var(--amber-300);
-  --accent-press:  var(--amber-500);
-  --accent-soft:   var(--amber-50);
-  --accent-border: var(--amber-200);
-  --accent-ink:    var(--amber-700);   /* yellow-as-text, 4.7:1 on white */
+  --accent:          var(--amber-400);
+  --accent-hover:    var(--amber-300);
+  --accent-press:    var(--amber-500);
+  --accent-soft:     light-dark(var(--amber-50), rgb(245 196 0 / 0.10));
+  --accent-border:   light-dark(var(--amber-200), rgb(245 196 0 / 0.28));
+  --accent-ink:      light-dark(var(--amber-700), var(--amber-300));
 
-  --foundation:    var(--navy-900);
-  --foundation-soft: var(--navy-50);
-  --foundation-border: var(--navy-100);
+  --foundation:        light-dark(var(--navy-900), #0C1524);
+  --foundation-soft:   light-dark(var(--navy-50), rgb(124 156 200 / 0.10));
+  --foundation-border: light-dark(var(--navy-100), rgb(124 156 200 / 0.20));
 
-  --success:       var(--green-600);
-  --success-soft:  var(--green-100);
-  --warning:       var(--orange-600);
-  --warning-soft:  var(--orange-100);
-  --danger:        var(--red-600);
-  --danger-soft:   var(--red-100);
-  --info:          var(--blue-600);
-  --info-soft:     var(--blue-100);
+  --success:      light-dark(var(--green-600), #4ABE83);
+  --success-soft: light-dark(var(--green-100), rgb(30 158 94 / 0.14));
+  --warning:      light-dark(var(--orange-600), #E0A044);
+  --warning-soft: light-dark(var(--orange-100), rgb(199 126 14 / 0.16));
+  --danger:       light-dark(var(--red-600), #E8776A);
+  --danger-soft:  light-dark(var(--red-100), rgb(208 74 61 / 0.16));
+  --info:         light-dark(var(--blue-600), #6BA6E0);
+  --info-soft:    light-dark(var(--blue-100), rgb(42 115 189 / 0.16));
 
-  --focus-ring:    var(--navy-600);
+  --focus-ring:   light-dark(var(--navy-600), var(--amber-300));
 
   /* Chart series — one hue family plus the accent, ordered by
      how often a series carries the primary meaning. */
-  --chart-1: var(--navy-600);
-  --chart-2: var(--amber-500);
-  --chart-3: var(--blue-500);
-  --chart-4: var(--navy-300);
-  --chart-5: var(--grey-400);
+  --chart-1: light-dark(var(--navy-600), var(--navy-300));
+  --chart-2: light-dark(var(--amber-500), var(--amber-400));
+  --chart-3: light-dark(var(--blue-500), #6BA6E0);
+  --chart-4: light-dark(var(--navy-300), var(--navy-500));
+  --chart-5: light-dark(var(--grey-400), var(--grey-500));
   --chart-grid: var(--border);
   --chart-axis: var(--text-muted);
-
-  color-scheme: light;
-}
-
-/* ============================================================
-   SEMANTIC LAYER — dark
-   Same structure, navy-black ground. Yellow is unchanged: it
-   already clears AA against both grounds.
-   ============================================================ */
-:root[data-theme='dark'] {
-  --bg:            #060C16;
-  --bg-sunken:     #04090F;
-  --surface:       #0C1524;
-  --surface-2:     #111C2E;
-  --surface-3:     #17243A;
-  --surface-inverse: #EDF1F7;
-
-  --border:        #1B2739;
-  --border-strong: #2C3B52;
-  --border-inverse: rgb(255 255 255 / 0.08);
-
-  --text:          #E9EEF6;
-  --text-secondary:#A3B3C8;
-  --text-muted:    #7E8FA6;
-  --text-inverse:  var(--navy-950);
-  --text-on-accent:var(--navy-900);
-
-  --accent:        var(--amber-400);
-  --accent-hover:  var(--amber-300);
-  --accent-press:  var(--amber-500);
-  --accent-soft:   rgb(245 196 0 / 0.10);
-  --accent-border: rgb(245 196 0 / 0.28);
-  --accent-ink:    var(--amber-300);
-
-  --foundation:    #0C1524;
-  --foundation-soft: rgb(124 156 200 / 0.10);
-  --foundation-border: rgb(124 156 200 / 0.20);
-
-  --success:       #4ABE83;
-  --success-soft:  rgb(30 158 94 / 0.14);
-  --warning:       #E0A044;
-  --warning-soft:  rgb(199 126 14 / 0.16);
-  --danger:        #E8776A;
-  --danger-soft:   rgb(208 74 61 / 0.16);
-  --info:          #6BA6E0;
-  --info-soft:     rgb(42 115 189 / 0.16);
-
-  --focus-ring:    var(--amber-300);
-
-  --chart-1: var(--navy-300);
-  --chart-2: var(--amber-400);
-  --chart-3: #6BA6E0;
-  --chart-4: var(--navy-500);
-  --chart-5: var(--grey-500);
-  --chart-grid: var(--border);
-  --chart-axis: var(--text-muted);
-
-  color-scheme: dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg:            #060C16;
-    --bg-sunken:     #04090F;
-    --surface:       #0C1524;
-    --surface-2:     #111C2E;
-    --surface-3:     #17243A;
-    --surface-inverse: #EDF1F7;
-    --border:        #1B2739;
-    --border-strong: #2C3B52;
-    --border-inverse: rgb(255 255 255 / 0.08);
-    --text:          #E9EEF6;
-    --text-secondary:#A3B3C8;
-    --text-muted:    #7E8FA6;
-    --text-inverse:  var(--navy-950);
-    --accent-soft:   rgb(245 196 0 / 0.10);
-    --accent-border: rgb(245 196 0 / 0.28);
-    --accent-ink:    var(--amber-300);
-    --foundation:    #0C1524;
-    --foundation-soft: rgb(124 156 200 / 0.10);
-    --foundation-border: rgb(124 156 200 / 0.20);
-    --success:       #4ABE83;
-    --success-soft:  rgb(30 158 94 / 0.14);
-    --warning:       #E0A044;
-    --warning-soft:  rgb(199 126 14 / 0.16);
-    --danger:        #E8776A;
-    --danger-soft:   rgb(208 74 61 / 0.16);
-    --info:          #6BA6E0;
-    --info-soft:     rgb(42 115 189 / 0.16);
-    --focus-ring:    var(--amber-300);
-    --chart-1: var(--navy-300);
-    --chart-2: var(--amber-400);
-    --chart-3: #6BA6E0;
-    --chart-4: var(--navy-500);
-    --chart-5: var(--grey-500);
-    color-scheme: dark;
-  }
 }
 
 /* ============================================================
    TYPOGRAPHY
+   ------------------------------------------------------------
+   Inter is loaded as a variable font from index.html (preload,
+   wght 400–700), so intermediate weights (550, 650) render as
+   real instances instead of snapping.
    ============================================================ */
 :root {
-  /* Two families, two jobs. Inter runs the product: it is built for
-     dense interface text. Instrument Sans runs the marketing site: its
-     tighter apertures and narrower caps give headlines an editorial
-     voice that Inter, by design, does not have. Monospace is reserved
-     for indices, room codes and technical metadata. */
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Instrument Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: var(--font);
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 
-  /* Scale — 16px root. Ratio tightens as sizes grow so headings
-     stay authoritative without shouting. */
-  --fs-display: clamp(2.5rem, 1.6rem + 3.4vw, 3.75rem);  /* 40 → 60 */
-  --fs-h1:      1.75rem;    /* 28 */
-  --fs-h2:      1.375rem;   /* 22 */
-  --fs-h3:      1.0625rem;  /* 17 */
-  --fs-h4:      0.9375rem;  /* 15 */
-  --fs-body:    0.9375rem;  /* 15 */
-  --fs-sm:      0.875rem;   /* 14 */
-  --fs-xs:      0.8125rem;  /* 13 */
+  /* Scale — 16px root. Deliberately compact: the working range is
+     13–14px, the page title is 20px, and nothing in the product
+     (outside marketing) exceeds 22px. */
+  --fs-display: clamp(2.25rem, 1.4rem + 2.8vw, 3.25rem); /* 36 → 52, marketing only */
+  --fs-h1:      1.25rem;    /* 20 — page titles */
+  --fs-h2:      1rem;       /* 16 — modal / section titles */
+  --fs-h3:      0.875rem;   /* 14 — card and panel titles */
+  --fs-h4:      0.8125rem;  /* 13 — same as sm, weight carries it */
+  --fs-body:    0.875rem;   /* 14 */
+  --fs-sm:      0.8125rem;  /* 13 — interface text, tables, buttons */
+  --fs-xs:      0.8125rem;  /* 13 — alias of sm; kept for existing call sites */
   --fs-caption: 0.75rem;    /* 12 */
   --fs-label:   0.6875rem;  /* 11 — uppercase eyebrows only */
+  --fs-metric:  1.5rem;     /* 24 — stat values */
+  --fs-data:    0.78125rem; /* 12.5 — monospace identifiers */
 
   --fw-regular: 400;
   --fw-medium:  500;
   --fw-semi:    600;
   --fw-bold:    700;
 
-  --lh-tight:   1.15;
-  --lh-heading: 1.28;
-  --lh-body:    1.6;
+  --lh-tight:   1.1;
+  --lh-heading: 1.25;
+  --lh-body:    1.5;
   --lh-ui:      1.35;
 
-  --ls-display: -0.028em;
-  --ls-heading: -0.018em;
-  --ls-body:    -0.006em;
-  --ls-label:    0.07em;
+  --ls-display: -0.03em;
+  --ls-heading: -0.014em;
+  --ls-body:    -0.003em;
+  --ls-label:    0.05em;   /* the ONLY tracking for uppercase micro-labels */
 }
 
 /* ============================================================
-   SPACE · RADIUS · ELEVATION · MOTION
+   SPACE · RADIUS · ELEVATION · MOTION · LAYOUT
    ============================================================ */
 :root {
   --s-1:  4px;
   --s-2:  8px;
   --s-3:  12px;
   --s-4:  16px;
-  --s-5:  20px;
+  --s-5:  20px;   /* legacy step — prefer 16 or 24 in new work */
   --s-6:  24px;
   --s-7:  32px;
   --s-8:  40px;
@@ -276,23 +192,26 @@
   --s-11: 80px;
   --s-12: 96px;
 
-  /* Controlled radius set. Data surfaces stay squarer than
-     content surfaces so the UI reads structured, not playful. */
-  --r-xs:   4px;
-  --r-sm:   6px;
-  --r-md:   8px;    /* inputs, buttons */
-  --r-lg:   10px;   /* small cards, menus */
-  --r-xl:   12px;   /* cards */
-  --r-2xl:  16px;   /* page-level containers, modals */
+  /* Restrained geometry. Nothing in the product is rounder than
+     8px except the pill-shaped live/count marks. */
+  --r-xs:   3px;
+  --r-sm:   4px;
+  --r-md:   6px;    /* inputs, buttons, badges */
+  --r-lg:   8px;    /* menus, small panels */
+  --r-xl:   10px;   /* cards, panels, modals */
+  --r-2xl:  12px;   /* page-level frames only */
   --r-full: 999px;
 
   /* Depth is carried by borders and tone. Shadows only lift
      things that genuinely float above the page. */
-  --shadow-xs: 0 1px 1px rgb(7 26 51 / 0.03);
-  --shadow-sm: 0 1px 2px rgb(7 26 51 / 0.04), 0 1px 1px rgb(7 26 51 / 0.03);
-  --shadow-md: 0 4px 12px -2px rgb(7 26 51 / 0.07), 0 2px 4px -2px rgb(7 26 51 / 0.04);
-  --shadow-lg: 0 16px 40px -12px rgb(7 26 51 / 0.16), 0 4px 10px -4px rgb(7 26 51 / 0.06);
-  --shadow-pop: 0 8px 24px -6px rgb(7 26 51 / 0.14), 0 2px 6px -2px rgb(7 26 51 / 0.06);
+  --shadow-xs: 0 1px 1px light-dark(rgb(7 26 51 / 0.04), rgb(0 0 0 / 0.2));
+  --shadow-sm: light-dark(0 1px 2px rgb(7 26 51 / 0.06), 0 1px 2px rgb(0 0 0 / 0.3));
+  /* Panels: a contact line plus a whisper of lift, so boxes sit on the
+     page instead of being drawn on it. */
+  --shadow-panel: light-dark(0 1px 2px rgb(7 26 51 / 0.04), 0 1px 2px rgb(0 0 0 / 0.25)), light-dark(0 4px 12px -8px rgb(7 26 51 / 0.10), 0 4px 12px -8px rgb(0 0 0 / 0.4));
+  --shadow-md: light-dark(0 2px 8px -2px rgb(7 26 51 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.35));
+  --shadow-lg: light-dark(0 12px 32px -12px rgb(7 26 51 / 0.18), 0 12px 32px -12px rgb(0 0 0 / 0.5));
+  --shadow-pop: light-dark(0 6px 20px -8px rgb(7 26 51 / 0.18), 0 6px 20px -8px rgb(0 0 0 / 0.5));
 
   --t-fast:  150ms;
   --t-base:  220ms;
@@ -301,29 +220,31 @@
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
 
-  --sidebar-w: 260px;
-  --sidebar-w-collapsed: 72px;
-  --topbar-h: 60px;
-  --content-max: 1320px;
+  /* Control metrics — one grid for buttons and inputs. Toolbars use
+     sm, everything else md, the page's one primary action and the
+     auth form use lg. */
+  --ctl-xs: 26px;
+  --ctl-sm: 30px;
+  --ctl-md: 34px;
+  --ctl-lg: 38px;
+  --ctl-xl: 42px;
+
+  /* Shell */
+  --sidebar-w: 232px;
+  --sidebar-w-collapsed: 56px;
+  --topbar-h: 52px;
+
+  /* Containers — one per kind of content. Tables and the live
+     classroom may use the full width; reading and forms may not. */
+  --content-max:     1200px;
+  --content-wide:    1440px;
+  --content-reading: 760px;
+  --content-form:    640px;
+  --page-px:         32px;
+  --page-py:         24px;
+
   --z-sticky: 20;
   --z-drawer: 60;
   --z-modal:  70;
   --z-toast:  80;
-}
-
-:root[data-theme='dark'] {
-  --shadow-xs: 0 1px 1px rgb(0 0 0 / 0.3);
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
-  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
-  --shadow-lg: 0 16px 40px -12px rgb(0 0 0 / 0.65);
-  --shadow-pop: 0 8px 24px -6px rgb(0 0 0 / 0.6);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --shadow-xs: 0 1px 1px rgb(0 0 0 / 0.3);
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
-    --shadow-lg: 0 16px 40px -12px rgb(0 0 0 / 0.65);
-    --shadow-pop: 0 8px 24px -6px rgb(0 0 0 / 0.6);
-  }
 }

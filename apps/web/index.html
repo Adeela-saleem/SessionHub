@@ -9,6 +9,18 @@
     <meta name="theme-color" content="#060C16" media="(prefers-color-scheme: dark)" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" />
+    <script>
+      /* Pre-paint theme: pin a stored choice before first render so a
+         dark-preference reload never flashes light. */
+      try {
+        var t = localStorage.getItem('sessionhub.theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+        if (localStorage.getItem('sessionhub.rail') === 'light') document.documentElement.setAttribute('data-rail', 'light');
+        var s = localStorage.getItem('sessionhub.sidebar');
+        if (s === 'expanded' || s === 'collapsed') document.documentElement.setAttribute('data-sidebar', s);
+      } catch (e) {}
+    </script>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23F5C400'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='18' font-weight='700' text-anchor='middle' fill='%23071A33'%3ES%3C/text%3E%3C/svg%3E" />
   </head>
   <body>

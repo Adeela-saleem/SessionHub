@@ -57,12 +57,33 @@ async function refreshAccessToken(): Promise<string | null> {
   return refreshInFlight;
 }
 
+/**
+ * Raised when the request never reached the server — the API is down,
+ * the connection dropped, or the browser blocked it. Distinct from
+ * ApiError, which means the server answered and said no.
+ */
+export class NetworkError extends Error {
+  constructor(public url: string, cause?: unknown) {
+    super('Could not reach the server. Check that the API is running, then try again.');
+    this.name = 'NetworkError';
+    this.cause = cause;
+  }
+}
+
 async function request<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set('Content-Type', 'application/json');
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
 
-  const res = await fetch(`${BASE}/api${path}`, { ...init, headers });
+  const url = `${BASE}/api${path}`;
+  let res: Response;
+  try {
+    res = await fetch(url, { ...init, headers });
+  } catch (cause) {
+    // fetch only rejects for transport failures; a 4xx/5xx resolves.
+    // Saying so beats a generic "something went wrong".
+    throw new NetworkError(url, cause);
+  }
 
   if (res.status === 401 && retry) {
     const fresh = await refreshAccessToken();
@@ -73,10 +94,27 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
 
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 429) throw rateLimited();
     const message = Array.isArray(body.message) ? body.message[0] : body.message;
-    throw new ApiError(res.status, message ?? 'Something went wrong', body.code);
+    throw new ApiError(
+      res.status,
+      message ?? `The server returned ${res.status}${res.statusText ? ` ${res.statusText}` : ''}.`,
+      body.code,
+    );
   }
   return body as T;
+}
+
+/**
+ * A 429 is the server protecting itself, not the connection failing.
+ * Name it honestly so no screen blames the network for a throttle.
+ */
+function rateLimited(): ApiError {
+  return new ApiError(
+    429,
+    'The server is briefly rate-limiting requests. It usually recovers within a minute.',
+    'RATE_LIMITED',
+  );
 }
 
 export const api = {
@@ -85,3 +123,59 @@ export const api = {
   patch: <T,>(p: string, body?: unknown) => request<T>(p, { method: 'PATCH', body: JSON.stringify(body ?? {}) }),
   del:   <T,>(p: string) => request<T>(p, { method: 'DELETE' }),
 };
+
+/**
+ * Multipart upload. Content-Type is left to the browser so the
+ * boundary is set correctly; auth + refresh behave like `request`.
+ */
+export async function apiUpload<T>(path: string, file: File, retry = true): Promise<T> {
+  const form = new FormData();
+  form.append('file', file);
+  const headers = new Headers();
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+
+  const url = `${BASE}/api${path}`;
+  let res: Response;
+  try {
+    res = await fetch(url, { method: 'POST', body: form, headers });
+  } catch (cause) {
+    throw new NetworkError(url, cause);
+  }
+  if (res.status === 401 && retry) {
+    const fresh = await refreshAccessToken();
+    if (fresh) return apiUpload<T>(path, file, false);
+  }
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (res.status === 429) throw rateLimited();
+    const message = Array.isArray(body.message) ? body.message[0] : body.message;
+    throw new ApiError(res.status, message ?? `Upload failed (${res.status}).`, body.code);
+  }
+  return body as T;
+}
+
+/**
+ * Authenticated download: files are served through a permission check,
+ * not a public URL, so a plain <a href> cannot carry the token. Fetch
+ * the bytes and hand them to the browser as a blob.
+ */
+export async function apiDownload(fileId: string, filename: string): Promise<void> {
+  const headers = new Headers();
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+  const url = `${BASE}/api/files/${fileId}`;
+  let res = await fetch(url, { headers }).catch((cause) => { throw new NetworkError(url, cause); });
+  if (res.status === 401) {
+    const fresh = await refreshAccessToken();
+    if (!fresh) throw new ApiError(401, 'Your session has expired.');
+    headers.set('Authorization', `Bearer ${fresh}`);
+    res = await fetch(url, { headers });
+  }
+  if (res.status === 429) throw rateLimited();
+  if (!res.ok) throw new ApiError(res.status, 'Could not download the file.');
+  const blob = await res.blob();
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = href; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(href);
+}
