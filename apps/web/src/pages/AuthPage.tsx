@@ -30,12 +30,6 @@ const PROMISES = [
   'Attendance and accuracy tracked per course',
 ];
 
-const DEMO = [
-  { email: 'admin@sessionhub.edu', role: 'Administrator' },
-  { email: 'teacher@sessionhub.edu', role: 'Teacher' },
-  { email: 'ada@sessionhub.edu', role: 'Student' },
-];
-
 /** Field-level errors the API reports, mapped back onto inputs. */
 function fieldFor(message: string): 'email' | 'password' | null {
   const m = message.toLowerCase();
@@ -119,22 +113,6 @@ export default function AuthPage() {
             <ul className="auth-promises">
               {PROMISES.map((p) => <li key={p}>{p}</li>)}
             </ul>
-          </div>
-
-          <div className="auth-demo">
-            <span className="auth-demo-label">Demo access</span>
-            <dl className="auth-demo-list">
-              {DEMO.map((d) => (
-                <div key={d.email}>
-                  <dt>{d.role}</dt>
-                  <dd><code>{d.email}</code></dd>
-                </div>
-              ))}
-              <div>
-                <dt>Password</dt>
-                <dd><code>Password123!</code></dd>
-              </div>
-            </dl>
           </div>
         </div>
       </aside>
@@ -228,26 +206,6 @@ export default function AuthPage() {
               {mode === 'login' ? 'Create one' : 'Log in instead'}
             </button>
           </p>
-
-          {/* Below 900px the brand aside is hidden, so the demo credentials
-              keep a compact seat on the form side. */}
-          <div className="auth-mobile">
-            <details className="auth-mobile-demo">
-              <summary>Demo access</summary>
-              <dl className="auth-demo-list">
-                {DEMO.map((d) => (
-                  <div key={d.email}>
-                    <dt>{d.role}</dt>
-                    <dd><code>{d.email}</code></dd>
-                  </div>
-                ))}
-                <div>
-                  <dt>Password</dt>
-                  <dd><code>Password123!</code></dd>
-                </div>
-              </dl>
-            </details>
-          </div>
         </div>
       </main>
     </div>
