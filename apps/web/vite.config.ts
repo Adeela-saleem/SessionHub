@@ -26,6 +26,9 @@ export default defineConfig({
         // lazily routed. Splitting it keeps it out of the first paint.
         manualChunks: {
           charts: ['recharts'],
+          // The PDF renderer is only reached from the paper and quiz
+          // pages, and only after a sheet exists to render.
+          pdf: ['@react-pdf/renderer'],
           vendor: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
         },
       },

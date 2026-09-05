@@ -1,5 +1,5 @@
 import type {
-  InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes,
+  ChangeEvent, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes,
 } from 'react';
 import { useId, useState } from 'react';
 import { IconAlert, IconEye, IconEyeOff, IconSearch } from '../icons';
@@ -51,8 +51,73 @@ export function Input({ className = '', type = 'text', ...rest }: InputHTMLAttri
   return <input type={type} className={`input ${className}`.trim()} {...rest} />;
 }
 
+/**
+ * Pulls a typed value back inside [min, max] before anyone reads it.
+ * The native `min`/`max` attributes only complain at submit; this
+ * rewrites the field as the person types, so "500" in a field capped at
+ * 50 becomes 50 on the third keystroke. Whole numbers only.
+ */
+function clampNumberInput(el: HTMLInputElement, min?: number, max?: number, step = 1) {
+  if (el.value === '') return;
+  const n = Number(el.value);
+  if (Number.isNaN(n)) { el.value = ''; return; }
+  const lo = min ?? Number.NEGATIVE_INFINITY;
+  const hi = max ?? Number.POSITIVE_INFINITY;
+  // Whole numbers unless the caller allows a finer step (half marks, say).
+  const snapped = Number.isInteger(step) ? Math.trunc(n) : Math.round(n / step) * step;
+  const bounded = Math.min(hi, Math.max(lo, snapped));
+  if (bounded !== n) el.value = String(bounded);
+}
+
+type NumberInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'min' | 'max' | 'step'> & {
+  min?: number; max?: number; step?: number;
+};
+
+/** Bare number input that cannot hold a value outside [min, max]. */
+export function NumberInput({ min, max, step = 1, onChange, onBlur, ...rest }: NumberInputProps) {
+  return (
+    <Input
+      type="number" inputMode={Number.isInteger(step) ? 'numeric' : 'decimal'} step={step} min={min} max={max}
+      onChange={(e: ChangeEvent<HTMLInputElement>) => { clampNumberInput(e.target, min, max, step); onChange?.(e); }}
+      onBlur={(e) => { clampNumberInput(e.currentTarget, min, max, step); onBlur?.(e); }}
+      {...rest}
+    />
+  );
+}
+
+/** Labelled number input with the same hard bounds. */
+export function NumberField({
+  label, hint, error, optional, required, className, min, max, onChange, onBlur, ...rest
+}: {
+  label: string; hint?: ReactNode; error?: string; optional?: boolean;
+} & NumberInputProps) {
+  const id = useId();
+  return (
+    <Field label={label} hint={hint} error={error} optional={optional} required={required} htmlFor={id} className={className}>
+      <NumberInput
+        id={id} aria-invalid={error ? true : undefined} required={required}
+        min={min} max={max} onChange={onChange} onBlur={onBlur} {...rest}
+      />
+    </Field>
+  );
+}
+
 export function Textarea({ className = '', ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea className={`textarea ${className}`.trim()} {...rest} />;
+}
+
+/** Field + textarea, for anything entered one item per line. */
+export function TextareaField({
+  label, hint, error, optional, required, className, rows = 4, ...rest
+}: {
+  label: string; hint?: ReactNode; error?: string; optional?: boolean;
+} & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const id = useId();
+  return (
+    <Field label={label} hint={hint} error={error} optional={optional} required={required} htmlFor={id} className={className}>
+      <Textarea id={id} rows={rows} aria-invalid={error ? true : undefined} required={required} {...rest} />
+    </Field>
+  );
 }
 
 export function Select({ className = '', children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {

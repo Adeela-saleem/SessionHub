@@ -1,0 +1,162 @@
+/* ============================================================
+   SessionHub — teacher page compositions
+   Screen-specific layout only. Shared patterns belong in
+   components.css / base.css.
+   ============================================================ */
+
+/* A bordered frame for a DataTable that sits under a section
+   title — the table's own toolbar and pagination draw inside it. */
+
+/* Timetable board frame — replaces the old card wrapper. */
+.ttb-frame {
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+.ttb-frame > .ttb-scroll { border-radius: inherit; }
+
+/* ── Course builder ───────────────────────────────────────
+   Modules are ruled sections, not cards; lessons are rows. */
+.builder { display: flex; flex-direction: column; border-top: 1px solid var(--border); }
+.builder-module { border-bottom: 1px solid var(--border); }
+.builder-module-head {
+  display: flex; align-items: center; gap: var(--s-3);
+  min-height: 48px;
+  padding: var(--s-2) 0;
+}
+.builder-module-head .builder-toggle { flex: 1; min-width: 0; font-size: var(--fs-h3); }
+.builder-module-sub { display: block; font-size: var(--fs-caption); font-weight: var(--fw-regular); color: var(--text-muted); margin-top: 1px; }
+.builder-module-actions { display: flex; align-items: center; gap: var(--s-2); flex: none; }
+.builder-lessons { display: flex; flex-direction: column; margin-bottom: var(--s-2); }
+.builder-lessons li {
+  display: flex; align-items: center; gap: var(--s-3);
+  min-height: 40px;
+  padding: var(--s-1) 0 var(--s-1) calc(20px + var(--s-3));
+  border-top: 1px solid var(--border);
+  transition: background-color var(--t-fast) var(--ease);
+}
+.builder-lessons li:hover { background: var(--surface-2); }
+.builder-lesson-index { flex: none; width: 34px; font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--text-muted); }
+.builder-lesson-title { display: block; font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--text); }
+.builder-lesson-meta { display: block; font-size: var(--fs-caption); color: var(--text-muted); }
+.builder-add { padding: var(--s-1) 0 var(--s-3) calc(20px + var(--s-3)); }
+@media (max-width: 640px) {
+  .builder-lessons li { flex-wrap: wrap; padding-left: 0; }
+  .builder-lesson-index { width: auto; }
+  .builder-add { padding-left: 0; }
+  .builder-module-head { flex-wrap: wrap; }
+}
+
+/* ── Quiz studio ──────────────────────────────────────────
+   Generator column and a review column of dense editable rows. */
+.studio-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  gap: var(--s-8);
+  align-items: start;
+}
+@media (max-width: 1080px) { .studio-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-7); } }
+
+.draft-list { display: flex; flex-direction: column; border-top: 1px solid var(--border); }
+.draft { padding: var(--s-4) 0; border-bottom: 1px solid var(--border); }
+.draft-head { display: flex; align-items: flex-start; gap: var(--s-3); margin-bottom: var(--s-2); }
+.draft-prompt-input { flex: 1; min-width: 0; font-size: var(--fs-sm); font-weight: var(--fw-medium); line-height: 1.5; min-height: 0; }
+.draft-options { display: flex; flex-direction: column; gap: var(--s-1); margin: 0 0 var(--s-2) calc(24px + var(--s-3)); }
+.draft-options li { display: flex; align-items: center; gap: var(--s-2); font-size: var(--fs-caption); color: var(--text-secondary); }
+.draft-options li .input { flex: 1; min-width: 0; min-height: var(--ctl-md); padding-block: 0; font-size: var(--fs-sm); }
+.draft-options li.is-correct .lq-key { background: var(--success); color: #fff; }
+.draft-options li.is-correct .input { border-color: color-mix(in srgb, var(--success) 45%, transparent); }
+.draft-correct-pick { display: inline-flex; align-items: center; gap: 5px; width: 74px; font-size: var(--fs-caption); color: var(--text-muted); cursor: pointer; white-space: nowrap; }
+.draft-correct-pick input { accent-color: var(--success); margin: 0; }
+.draft-options li.is-correct .draft-correct-pick { color: var(--success); font-weight: var(--fw-medium); }
+.draft-foot { display: flex; align-items: flex-start; gap: var(--s-3); margin-left: calc(24px + var(--s-3)); }
+.draft-explain-input { flex: 1; min-width: 0; min-height: 0; font-size: var(--fs-caption); color: var(--text-secondary); line-height: 1.5; }
+.draft-meta { display: flex; align-items: center; gap: var(--s-2); flex: none; }
+.draft-meta .input { width: 64px; min-height: var(--ctl-md); padding-block: 0; text-align: right; }
+@media (max-width: 640px) {
+  .draft-options, .draft-foot { margin-left: 0; }
+  .draft-foot { flex-wrap: wrap; }
+}
+
+/* ── Exam paper ───────────────────────────────────────────── */
+.paper-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: var(--s-8);
+  align-items: start;
+}
+@media (max-width: 1180px) { .paper-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-7); } }
+
+.paper-qlist { display: flex; flex-direction: column; border-top: 1px solid var(--border); }
+.paper-q { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: var(--s-3); padding: var(--s-3) 0; border-bottom: 1px solid var(--border); }
+.paper-q-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
+.paper-q-fields .input, .paper-q-fields .select { min-height: var(--ctl-md); padding-block: 0; }
+.paper-marks { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; margin-top: var(--s-2); }
+.paper-marks label { display: flex; align-items: center; gap: 6px; font-size: var(--fs-caption); color: var(--text-muted); }
+.paper-marks .input { width: 56px; min-height: var(--ctl-sm); padding: 0 var(--s-1); text-align: center; }
+.paper-q-total { font-size: var(--fs-caption); font-weight: var(--fw-medium); color: var(--text); font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .paper-q-fields { grid-template-columns: minmax(0, 1fr); } }
+
+.paper-preview { position: sticky; top: calc(var(--topbar-h) + var(--s-6)); }
+@media (max-width: 1180px) { .paper-preview { position: static; } }
+
+/* ── PDF pane — the sheet as it downloads ───────────────── */
+.pdf-pane { display: flex; flex-direction: column; gap: var(--s-3); }
+.pdf-pane-bar { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.pdf-pane-name { flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: var(--s-2); font-size: var(--fs-caption); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.pdf-frame {
+  display: block; width: 100%;
+  height: 72dvh; min-height: 520px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+}
+.pdf-frame-error { display: grid; place-items: center; padding: var(--s-6); font-size: var(--fs-sm); color: var(--danger); }
+.paper-preview .pdf-frame { height: calc(100dvh - var(--topbar-h) - 176px); }
+@media (max-width: 1180px) { .paper-preview .pdf-frame { height: 80dvh; } }
+.paper-type-tabs { margin-bottom: var(--s-6); }
+
+/* ── Paper editor — the generated text, rewritten by hand ── */
+.paper-edit { display: flex; flex-direction: column; border-top: 1px solid var(--border); max-height: calc(100dvh - var(--topbar-h) - 176px); overflow-y: auto; }
+@media (max-width: 1180px) { .paper-edit { max-height: none; } }
+.paper-edit-q { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4) 0; border-bottom: 1px solid var(--border); }
+.paper-edit-head { display: flex; align-items: center; gap: var(--s-3); }
+.paper-edit-time { display: inline-flex; align-items: center; gap: var(--s-2); }
+.paper-edit-time .input { width: 64px; min-height: var(--ctl-sm); padding: 0 var(--s-2); text-align: center; }
+.paper-edit-q .textarea, .paper-edit-q textarea { font-size: var(--fs-sm); line-height: 1.5; }
+.paper-edit-table { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface-2); }
+.paper-edit-table-bar { display: flex; align-items: center; gap: var(--s-2); }
+.paper-edit-table-bar .input { flex: 1; min-width: 0; min-height: var(--ctl-sm); }
+.paper-edit-grid { display: grid; gap: 4px; align-items: center; }
+.paper-edit-grid .input { min-height: var(--ctl-sm); padding: 0 var(--s-2); font-size: var(--fs-caption); text-align: center; }
+.paper-edit-grid .input.is-head { font-weight: var(--fw-semi); }
+.paper-edit-cell-btn { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: var(--r-sm); color: var(--text-muted); background: transparent; border: 0; cursor: pointer; }
+.paper-edit-cell-btn:hover:not(:disabled) { color: var(--danger); background: var(--surface); }
+.paper-edit-cell-btn:disabled { opacity: .35; cursor: default; }
+.paper-edit-parts { display: flex; flex-direction: column; gap: var(--s-2); }
+.paper-edit-parts li { display: flex; align-items: flex-start; gap: var(--s-3); }
+.paper-edit-parts .textarea, .paper-edit-parts textarea { flex: 1; min-width: 0; }
+.quiz-sheet { margin-bottom: var(--s-4); }
+.quiz-sheet .form-row { margin-bottom: var(--s-3); }
+
+/* ── Gradebook ─────────────────────────────────────────────── */
+.gradebook-frame .gradebook-scroll { max-height: 64vh; }
+.gradebook-frame .table-toolbar { border-bottom: 1px solid var(--border); }
+
+/* ── Grading drawer — the student's work as a ruled block ─── */
+.grade-submission {
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+.grade-submission p { margin: 0; }
+
+/* ── Assignment brief ─────────────────────────────────────── */
+.brief { max-width: 72ch; }
+.brief p { font-size: var(--fs-sm); color: var(--text-secondary); white-space: pre-wrap; margin: 0; }
+
+/* Sticky student column: match the row rules exactly. */
+.gradebook-table tbody tr:last-child th[scope='row'] { border-bottom: 0; }
+.gradebook-table th[scope='row'] { border-bottom: 1px solid var(--border); }
