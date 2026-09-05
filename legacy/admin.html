@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="SessionHub admin dashboard - manage teachers, students and courses, and monitor every live session across the institution.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard · SessionHub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/primitives.css">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="dashboard.css">
+
+<style>
+/* ── Analytics panel additions — scoped, no conflict with dashboard.css ── */
+.an-dept-prog {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.an-dept-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--blue-100);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.an-dept-fill {
+  height: 100%;
+  background: var(--blue-700);
+  border-radius: 999px;
+}
+.an-dept-pct {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--blue-700);
+  min-width: 34px;
+  text-align: right;
+}
+
+/* Audit log event type badges */
+.ev-quiz   { background: var(--blue-100);  color: var(--blue-700); }
+.ev-paper  { background: var(--warning-soft);          color: var(--warning); }
+.ev-session{ background: var(--success-soft);          color: var(--green); }
+
+.audit-row { font-size: .83rem; }
+.audit-time { font-family: var(--font-mono); font-size: .72rem; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to main content</a>
+<div class="dash">
+  <aside class="dash-sidebar">
+    <a href="index.html" class="logo">
+      <svg class="cap" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M24 6L4 16L24 26L44 16L24 6Z" fill="#FFC600"/>
+        <path d="M12 21V32C12 32 17 37 24 37C31 37 36 32 36 32V21L24 27L12 21Z" fill="#fff"/>
+      </svg>
+      SessionHub
+    </a>
+    <div class="dash-role-badge">Admin Console</div>
+    <ul class="dash-nav">
+      <li><button data-tab="overview"  class="active"><span class="icon">▦</span> Overview</button></li>
+      <li><button data-tab="teachers"><span class="icon">◆</span> Teachers</button></li>
+      <li><button data-tab="students"><span class="icon">●</span> Students</button></li>
+      <li><button data-tab="courses"><span class="icon">▤</span> Courses</button></li>
+      <li><button data-tab="monitor"><span class="icon">◎</span> Sessions &amp; Quizzes</button></li>
+      <li><button data-tab="analytics"><span class="icon">▲</span> Analytics</button></li>
+    </ul>
+    <div class="dash-logout"><button id="logoutBtn">Log out</button></div>
+  </aside>
+
+  <main class="dash-main" id="main">
+    <div class="dash-topbar">
+      <div>
+        <h1 id="pageTitle">Overview</h1>
+        <p>Department-wide oversight for SessionHub.</p>
+      </div>
+      <div class="dash-user-chip"><div class="av" id="userAv">A</div><span id="userName">Admin</span></div>
+    </div>
+
+    <!-- OVERVIEW — unchanged -->
+    <section class="tab-panel active" id="panel-overview">
+      <div class="grid-4">
+        <div class="card kpi"><b id="kpiTeachers">—</b><span>Approved teachers</span></div>
+        <div class="card kpi"><b id="kpiStudents">—</b><span>Students</span></div>
+        <div class="card kpi"><b id="kpiCourses">—</b><span>Active courses</span></div>
+        <div class="card kpi"><b id="kpiSessions">—</b><span>Live sessions now</span></div>
+      </div>
+      <div class="card">
+        <div class="card-row"><h3>Pending teacher approvals</h3></div>
+        <table id="pendingPreviewTable">
+          <thead><tr><th>Name</th><th>Department</th><th>Requested</th><th></th></tr></thead>
+          <tbody><tr><td colspan="4" class="empty-state">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TEACHERS — unchanged -->
+    <section class="tab-panel" id="panel-teachers">
+      <div class="card">
+        <div class="card-row"><h3>Add a teacher record</h3></div>
+        <form id="addTeacherForm" class="grid-2">
+          <div class="field"><label for="newTeacherName">Full name</label><input type="text" id="newTeacherName" required placeholder="e.g. Rabia Ahmed"></div>
+          <div class="field"><label for="newTeacherEmail">Email</label><input type="email" id="newTeacherEmail" required placeholder="teacher@institution.edu"></div>
+          <div class="field">
+            <label for="newTeacherDept">Department</label>
+            <input type="text" id="newTeacherDept" required placeholder="Computer Science">
+            <div class="field-hint">Saved with role: teacher and approval_status: approved. Teacher signs in via the main signup form.</div>
+          </div>
+          <div style="display:flex; align-items:flex-end;"><button class="btn btn-primary btn-block" type="submit" id="addTeacherBtn">Add teacher record</button></div>
+          <div style="grid-column:1/-1;"><div id="addTeacherMsg" class="form-msg"></div></div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-row"><h3>All teachers</h3></div>
+        <table id="teachersTable">
+          <thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody><tr><td colspan="5" class="empty-state">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- STUDENTS — unchanged -->
+    <section class="tab-panel" id="panel-students">
+      <div class="card">
+        <div class="card-row"><h3>Add a student record</h3></div>
+        <form id="addStudentForm" class="grid-2">
+          <div class="field"><label for="newStudentName">Full name</label><input type="text" id="newStudentName" required placeholder="e.g. Fatima Khan"></div>
+          <div class="field"><label for="newStudentEmail">Email</label><input type="email" id="newStudentEmail" required placeholder="student@institution.edu"></div>
+          <div class="field"><label for="newStudentDept">Department</label><input type="text" id="newStudentDept" required placeholder="Computer Science"></div>
+          <div class="field">
+            <label for="newStudentYear">Year</label>
+            <select id="newStudentYear"><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></select>
+          </div>
+          <div style="grid-column:1/-1; display:flex; align-items:center; gap:14px;">
+            <button class="btn btn-primary" type="submit" id="addStudentBtn">Add student record</button>
+            <div id="addStudentMsg" class="form-msg" style="margin:0; flex:1;"></div>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-row">
+          <h3>All students</h3>
+          <div class="tag-row">
+            <select id="filterDept" class="field" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px;"><option value="">All departments</option></select>
+            <select id="filterYear" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px;">
+              <option value="">All years</option><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option>
+            </select>
+          </div>
+        </div>
+        <table id="studentsTable">
+          <thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Year</th><th>Actions</th></tr></thead>
+          <tbody><tr><td colspan="5" class="empty-state">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- COURSES — unchanged -->
+    <section class="tab-panel" id="panel-courses">
+      <div class="card">
+        <div class="card-row"><h3>Assign a new course</h3></div>
+        <form id="courseForm" class="grid-2">
+          <div class="field"><label>Course name</label><input type="text" id="courseName" required placeholder="Database Systems"></div>
+          <div class="field"><label>Course code</label><input type="text" id="courseCode" required placeholder="DBMS-204"></div>
+          <div class="field"><label>Department</label><input type="text" id="courseDept" required placeholder="Computer Science"></div>
+          <div class="field"><label>Assign teacher</label><select id="courseTeacher" required><option value="">Select an approved teacher…</option></select></div>
+          <div style="grid-column:1/-1; display:flex; align-items:center; gap:14px;">
+            <button class="btn btn-primary" type="submit">Assign course</button>
+            <div id="courseMsg" class="form-msg" style="margin:0; flex:1;"></div>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-row"><h3>All courses</h3></div>
+        <table id="coursesTable">
+          <thead><tr><th>Course</th><th>Code</th><th>Department</th><th>Teacher</th><th>Actions</th></tr></thead>
+          <tbody><tr><td colspan="5" class="empty-state">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- MONITOR — unchanged -->
+    <section class="tab-panel" id="panel-monitor">
+      <div class="card">
+        <div class="card-row"><h3>Sessions</h3></div>
+        <table id="sessionsTable">
+          <thead><tr><th>Code</th><th>Course</th><th>Teacher</th><th>Status</th><th>Started</th></tr></thead>
+          <tbody><tr><td colspan="5" class="empty-state">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-row"><h3>Recent quizzes</h3></div>
+        <table id="quizzesTable">
+          <thead><tr><th>Question</th><th>Session code</th><th>Created</th></tr></thead>
+          <tbody><tr><td colspan="3" class="empty-state">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-row"><h3>AI paper formatting requests</h3></div>
+        <table id="paperFormatsTable">
+          <thead><tr><th>Title</th><th>Teacher</th><th>Created</th></tr></thead>
+          <tbody><tr><td colspan="3" class="empty-state">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         ANALYTICS — enhanced professional dashboard
+    ══════════════════════════════════════ -->
+    <section class="tab-panel" id="panel-analytics">
+
+      <!-- Row 1: System-wide KPI metrics -->
+      <div class="grid-4">
+        <div class="card kpi"><b id="anKpiStudents">—</b><span>Total students</span></div>
+        <div class="card kpi"><b id="anKpiTeachers">—</b><span>Approved teachers</span></div>
+        <div class="card kpi"><b id="anKpiCourses">—</b><span>Active courses</span></div>
+        <div class="card kpi"><b id="anKpiSessions">—</b><span>Total sessions run</span></div>
+      </div>
+
+      <!-- Row 2: Role distribution + department chart -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-row"><h3>Users by role</h3></div>
+          <canvas id="chartRoles" height="120"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-row"><h3>Students by department</h3></div>
+          <canvas id="chartDept" height="120"></canvas>
+        </div>
+      </div>
+
+      <!-- Row 3: Department performance table -->
+      <div class="card">
+        <div class="card-row"><h3>Department overview</h3></div>
+        <table id="deptTable">
+          <thead>
+            <tr>
+              <th>Department</th>
+              <th>Students</th>
+              <th>Teachers</th>
+              <th>Courses</th>
+              <th>Engagement</th>
+            </tr>
+          </thead>
+          <tbody id="deptTableBody">
+            <tr><td colspan="5" class="empty-state">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Row 4: Teacher activity table -->
+      <div class="card">
+        <div class="card-row"><h3>Teacher activity</h3></div>
+        <table id="teacherActivityTable">
+          <thead>
+            <tr>
+              <th>Teacher</th>
+              <th>Department</th>
+              <th>Courses</th>
+              <th>Sessions run</th>
+              <th>Quizzes broadcast</th>
+              <th>Papers generated</th>
+            </tr>
+          </thead>
+          <tbody id="teacherActivityBody">
+            <tr><td colspan="6" class="empty-state">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Row 5: Real-time audit log -->
+      <div class="card">
+        <div class="card-row">
+          <h3>Real-time platform activity</h3>
+          <span class="badge active"><span class="loading-dot"></span>Live</span>
+        </div>
+        <table id="auditLogTable">
+          <thead>
+            <tr><th>Time</th><th>Event</th><th>User</th><th>Detail</th></tr>
+          </thead>
+          <tbody id="auditLogBody">
+            <tr><td colspan="4" class="empty-state">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+  </main>
+</div>
+
+<script type="module" src="firebase-config.js"></script>
+<script type="module" src="admin.js"></script>
+<script src="theme-toggle.js"></script>
+</body>
+</html>

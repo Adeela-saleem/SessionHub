@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="SessionHub - run live classroom sessions with a single room code. Real-time quizzes, polls, Q&amp;A and automatic attendance for students, teachers and administrators.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SessionHub — Real-Time Interactive Classrooms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/primitives.css">
+<link rel="stylesheet" href="styles.css">
+
+
+<style>
+/* Auth-modal-only overrides. All layout lives in styles.css. */
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 42px !important; width: 100%; }
+.pw-eye {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; padding: 4px;
+  color: var(--text-muted); display: flex; align-items: center; line-height: 1;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.pw-eye:hover { color: var(--text); }
+.pw-eye svg { width: 16px; height: 16px; pointer-events: none; }
+</style>
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to main content</a>
+
+<!-- ===================== HEADER ===================== -->
+<header class="site-header">
+  <div class="wrap">
+    <a href="#home" class="logo">
+      <svg class="cap" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M24 6L4 16L24 26L44 16L24 6Z"/>
+        <path d="M12 21V32C12 32 17 37 24 37C31 37 36 32 36 32V21L24 27L12 21Z"/>
+      </svg>
+      Session<span class="dot">Hub</span>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="#home">Home</a></li>
+      <li><a href="#about">Why SessionHub</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#for-everyone">For Everyone</a></li>
+    </ul>
+
+    <div class="auth-actions">
+      <button class="btn btn-ghost btn-sm" data-open-auth="login">Log in</button>
+      <button class="btn btn-primary btn-sm" data-open-auth="signup">Sign up</button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ===================== HERO — asymmetric, product artifact on the right ===================== -->
+<section class="hero" id="home">
+  <div class="wrap hero-grid">
+
+    <div class="hero-copy">
+      <span class="eyebrow">AI-powered learning — now smarter</span>
+      <h1>Learn Smarter,<br>Achieve More.</h1>
+      <p class="lede">SessionHub brings world-class courses, smart scheduling, and real-time progress tracking into one powerful platform built for focused learners.</p>
+      <div class="hero-cta">
+        <button class="btn btn-primary" data-open-auth="signup">Get Started Free</button>
+        <button class="btn btn-secondary" data-open-auth="login">I Have an Account</button>
+      </div>
+    </div>
+
+    <!-- Product artifact: what a live session actually looks like -->
+    <aside class="hero-panel" aria-label="Live session preview">
+      <div class="hp-bar">
+        <span class="badge live"><span class="dot"></span>Live</span>
+        <span class="hp-course">CS-204 · Databases</span>
+      </div>
+      <div class="hp-body">
+        <span class="label-upper">Room code</span>
+        <div class="hp-code">
+          <span>D</span><span>B</span><span>M</span><span>S</span><span>7</span><span>K</span>
+        </div>
+        <div class="hp-stats">
+          <div><b>42</b><span>joined</span></div>
+          <div><b>38</b><span>answered</span></div>
+          <div><b>0.4s</b><span>sync</span></div>
+        </div>
+      </div>
+      <div class="hp-foot">
+        <span class="hp-q">Q3 · Which normal form removes transitive dependency?</span>
+        <div class="hp-dist" role="img" aria-label="Answer distribution: A 4 votes, B 6 votes, C 26 votes and correct, D 2 votes">
+          <span><i style="--v:15%"></i><b>A</b><em>4</em></span>
+          <span><i style="--v:23%"></i><b>B</b><em>6</em></span>
+          <span class="win"><i style="--v:100%"></i><b>C</b><em>26</em></span>
+          <span><i style="--v:8%"></i><b>D</b><em>2</em></span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Stat strip, full width, hairline dividers -->
+  <div class="wrap">
+    <div class="stat-strip">
+      <div><b>1</b><span>Code per session</span></div>
+      <div><b>0s</b><span>Sync delay on answers</span></div>
+      <div><b>3</b><span>Roles, one workspace</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== WHY — editorial two-column, no cards ===================== -->
+<section id="about" class="bg-tint">
+  <div class="wrap editorial">
+
+    <div class="editorial-lead">
+      <span class="eyebrow">Why SessionHub</span>
+      <h2>Built for the gap between a lecture slide and a real conversation.</h2>
+      <p>Most classroom tools are only used for uploading slides and checking grades later. SessionHub is built for the live 50 minutes you spend inside the classroom. We bring instant quiz broadcasting, smart paper formatting, and real-time tracking together so learning never stops.</p>
+    </div>
+
+    <dl class="editorial-list">
+      <div>
+        <dt><span class="num">01</span>All-in-One Admin Hub</dt>
+        <dd>Manage your entire institution, tracks courses, and views full analytics from one single dashboard.</dd>
+      </div>
+      <div>
+        <dt><span class="num">02</span>Smart Teacher Tools</dt>
+        <dd>Instantly create AI quizzes, formats exam papers in seconds, and automatically tracks student grades.</dd>
+      </div>
+      <div>
+        <dt><span class="num">03</span>One-Code Student Access</dt>
+        <dd>No complex setups. Students just type a simple room code to join live lectures and sessions instantly.</dd>
+      </div>
+      <div>
+        <dt><span class="num">04</span>Realtime Sync Core</dt>
+        <dd>Everything updates live on every screen. Quizzes broadcast and attendance logs the exact second it happens.</dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<!-- ===================== FEATURES — spec-sheet grid, vertical rules, no card chrome ===================== -->
+<section id="features">
+  <div class="wrap">
+    <header class="sec-head">
+      <span class="eyebrow">Capabilities</span>
+      <h2>Powerful tools designed for modern classrooms.</h2>
+    </header>
+
+    <div class="spec-grid">
+      <article class="spec">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <h3>Online Sessions</h3>
+        <p>Connect, learn, and grow through live online sessions anytime, anywhere.</p>
+      </article>
+      <article class="spec">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <h3>Live Progress Tracking</h3>
+        <p>Real-time dashboards show your learning velocity, completion rates, and grade trends.</p>
+      </article>
+      <article class="spec">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <h3>AI Paper Formatting</h3>
+        <p>Smart AI feature that formats papers into standard academic structure within seconds.</p>
+      </article>
+      <article class="spec">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <h3>AI Quiz Generator</h3>
+        <p>Instantly deploy dynamic multiple-choice question arrays for active student engagement sync.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOR EVERYONE — the only bordered cards on the page ===================== -->
+<section class="bg-tint" id="for-everyone">
+  <div class="wrap">
+    <header class="sec-head">
+      <span class="eyebrow">For Everyone</span>
+      <h2>Built for every role.</h2>
+      <p>Whether you are a student, a teacher, or running the whole institution — SessionHub has a dashboard for you.</p>
+    </header>
+
+    <div class="role-grid">
+
+      <article class="role">
+        <header><h3>Student</h3><span class="badge badge-brand">Join by code</span></header>
+        <p>Your personal learning hub. Track progress, submit assignments, and earn certificates.</p>
+        <ul>
+          <li>Progress tracking dashboard</li>
+          <li>Assignment submission system</li>
+          <li>Grade analytics and certificates</li>
+          <li>Course calendar and reminders</li>
+        </ul>
+      </article>
+
+      <article class="role">
+        <header><h3>Teacher</h3><span class="badge badge-info">Runs the room</span></header>
+        <p>Manage your classes, track student performance, and publish course content with ease.</p>
+        <ul>
+          <li>Class and student management</li>
+          <li>AI Quiz Generation and Paper Formatting</li>
+          <li>Analytics per student</li>
+          <li>Content publishing tools</li>
+        </ul>
+      </article>
+
+      <article class="role">
+        <header><h3>Admin</h3><span class="badge">Full control</span></header>
+        <p>Full platform control. Manage users, courses, and institution-wide analytics.</p>
+        <ul>
+          <li>Platform-wide analytics</li>
+          <li>User and role management</li>
+          <li>Course approval workflow</li>
+          <li>System settings and reports</li>
+        </ul>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===================== HOW IT WORKS — numbered stepper on a rule ===================== -->
+<section id="how">
+  <div class="wrap">
+    <header class="sec-head">
+      <span class="eyebrow">How a session runs</span>
+      <h2>From empty room to live answers in under a minute.</h2>
+    </header>
+
+    <ol class="stepper">
+      <li><span class="step-n">1</span><h4>Create the session</h4><p>A teacher starts a session for a course; SessionHub generates a unique code.</p></li>
+      <li><span class="step-n">2</span><h4>Share the code</h4><p>Students enter the code from their dashboard — no app install, no waiting room.</p></li>
+      <li><span class="step-n">3</span><h4>Run it live</h4><p>Launch an AI-generated quiz, a poll, or open the floor to Q&amp;A.</p></li>
+      <li><span class="step-n">4</span><h4>Read the room</h4><p>Attendance, scores, and engagement update for the teacher in real time.</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ===================== TESTIMONIALS — top-rule quotes, no cards ===================== -->
+<section id="testimonials" class="bg-tint">
+  <div class="wrap">
+    <header class="sec-head">
+      <span class="eyebrow">From the field</span>
+      <h2>What departments are saying.</h2>
+    </header>
+
+    <div class="quote-grid">
+      <figure class="quote">
+        <blockquote>“Attendance used to eat the first five minutes of every lecture. Now it logs itself the moment students join the session code.”</blockquote>
+        <figcaption><span class="testi-avatar">RA</span><span><b>Rabia A.</b>Assistant Professor, CS Dept.</span></figcaption>
+      </figure>
+      <figure class="quote">
+        <blockquote>“The AI quiz generator gives me a first draft in seconds — I just edit and broadcast. It's cut my prep time in half.”</blockquote>
+        <figcaption><span class="testi-avatar">MH</span><span><b>Moiz H.</b>Lecturer, Mathematics</span></figcaption>
+      </figure>
+      <figure class="quote">
+        <blockquote>“As an admin I finally have one place to see every session and quiz across departments instead of chasing screenshots.”</blockquote>
+        <figcaption><span class="testi-avatar">SK</span><span><b>Sana K.</b>Academic Coordinator</span></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FINAL CTA — brand band ===================== -->
+<section class="cta-section">
+  <div class="wrap">
+    <div class="cta-band">
+      <div>
+        <h2>Your first live session is two clicks away.</h2>
+        <p>Sign up as a teacher to start a session, or as a student to join one with a code.</p>
+      </div>
+      <button class="btn btn-primary btn-lg" data-open-auth="signup">Create your account</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+
+      <div class="footer-brand">
+        <a href="#home" class="logo">
+          <svg class="cap" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M24 6L4 16L24 26L44 16L24 6Z"/>
+            <path d="M12 21V32C12 32 17 37 24 37C31 37 36 32 36 32V21L24 27L12 21Z"/>
+          </svg>
+          SessionHub
+        </a>
+        <p>Transforming classrooms with real-time interaction and intelligent analytics for better learning outcomes.</p>
+        <div class="social-row" aria-label="Social media links">
+          <a href="#" class="social-btn" aria-label="Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 9h3V6h-3c-2.2 0-4 1.8-4 4v2H8v3h2v7h3v-7h3l1-3h-4v-2c0-.6.4-1 1-1z"/></svg></a>
+          <a href="#" class="social-btn" aria-label="LinkedIn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 8h-3v12h3V8zM5 3.5A1.75 1.75 0 105 7a1.75 1.75 0 000-3.5zM20.5 20h-3v-6.3c0-1.5-.5-2.5-1.9-2.5-1 0-1.6.7-1.9 1.4-.1.3-.1.6-.1 1V20h-3V8h3v1.7c.4-.7 1.2-1.7 3-1.7 2.2 0 3.8 1.4 3.8 4.5V20z"/></svg></a>
+          <a href="#" class="social-btn" aria-label="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 7.2s-.2-1.4-.8-2c-.7-.8-1.5-.8-1.9-.8C16.2 4.2 12 4.2 12 4.2s-4.2 0-6.9.2c-.4 0-1.2 0-1.9.8-.6.6-.8 2-.8 2S2.2 8.8 2.2 10.5v1.6c0 1.6.2 3.3.2 3.3s.2 1.4.8 2c.7.8 1.7.8 2.1.9 1.5.1 6.7.2 6.7.2s4.2 0 6.9-.2c.4 0 1.2 0 1.9-.8.6-.6.8-2 .8-2s.2-1.6.2-3.3v-1.6c0-1.7-.2-3.3-.2-3.3zM9.8 14.5V8.9l5.4 2.8-5.4 2.8z"/></svg></a>
+        </div>
+      </div>
+
+      <div>
+        <h5>Quick Links</h5>
+        <ul>
+          <li><a href="#home">Home</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#for-everyone">For Everyone</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h5>Contact Us</h5>
+        <ul class="contact-list">
+          <li><a href="mailto:support@sessionhub.edu">support@sessionhub.edu</a></li>
+          <li><span>+92 300 1234567</span></li>
+          <li><span>University Campus, Education City, Pakistan</span></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="footer-bottom">
+      <span>&copy; 2026 SessionHub. All rights reserved.</span>
+      <span>
+        <a href="#">Privacy Policy</a> &middot;
+        <a href="#">Terms of Service</a> &middot;
+        <a href="#">SDG 4 - Quality Education</a>
+      </span>
+    </div>
+  </div>
+</footer>
+
+<div class="modal-overlay" id="authOverlay">
+  <div class="modal">
+    <button class="modal-close" id="authClose" aria-label="Close">×</button>
+
+    <div class="tab-row">
+      <button class="tab-btn" id="tabLogin">Log in</button>
+      <button class="tab-btn" id="tabSignup">Sign up</button>
+    </div>
+
+    <div id="formMsg" class="form-msg"></div>
+
+    <!-- LOGIN FORM -->
+    <form id="loginForm">
+      <h3>Welcome back</h3>
+      <p class="sub">Log in to your SessionHub dashboard.</p>
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" required placeholder="you@institution.edu">
+        <div class="field-error" id="loginEmail-error"></div>
+      </div>
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="loginPassword" required placeholder="••••••••">
+          <button type="button" class="pw-eye" data-target="loginPassword" aria-label="Show password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <div class="field-error" id="loginPassword-error"></div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Log in</button>
+    </form>
+
+    <!-- SIGNUP FORM -->
+    <form id="signupForm" style="display:none;">
+      <h3>Create your account</h3>
+      <p class="sub">Choose your role to get started.</p>
+      <div class="role-select">
+        <div class="role-pill active" data-role="student">I'm a Student</div>
+        <div class="role-pill" data-role="teacher">I'm a Teacher</div>
+      </div>
+      <input type="hidden" id="signupRole" value="student">
+      <div class="field">
+        <label for="signupName">Full name</label>
+        <input type="text" id="signupName" required placeholder="Fatima Ahmed"
+               autocomplete="name">
+        <div class="field-error" id="signupName-error"></div>
+      </div>
+      <div class="field">
+        <label for="signupEmail">Email</label>
+        <input type="email" id="signupEmail" required placeholder="you@institution.edu">
+        <div class="field-error" id="signupEmail-error"></div>
+      </div>
+      <div class="field">
+        <label for="signupDept">Department</label>
+        <select id="signupDept" required>
+          <option value="" disabled selected>Select your department</option>
+          <option value="Computer Science">Computer Science</option>
+          <option value="Software Engineering">Software Engineering</option>
+          <option value="Information Technology">Information Technology</option>
+          <option value="Electrical Engineering">Electrical Engineering</option>
+         
+        </select>
+      </div>
+      <div class="field" id="yearField">
+        <label for="signupYear">Year</label>
+        <select id="signupYear">
+          <option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="signupPassword">Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="signupPassword" required placeholder="At least 8 characters">
+          <button type="button" class="pw-eye" data-target="signupPassword" aria-label="Show password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <div class="field-error" id="signupPassword-error"></div>
+        <div class="field-hint">Min. 8 characters, with an uppercase letter, a number, and a symbol.</div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Create account</button>
+    </form>
+  </div>
+</div>
+
+<script type="module" src="firebase-config.js"></script>
+<script type="module" src="auth.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    // Poll bar animation on hero card
+    document.querySelectorAll('.poll-bar-fill').forEach(el => {
+      const v = el.getAttribute('data-fill');
+      requestAnimationFrame(() => { el.style.width = v + '%'; });
+    });
+  });
+</script>
+<script src="theme-toggle.js"></script>
+</body>
+</html>

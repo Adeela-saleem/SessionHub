@@ -1,0 +1,715 @@
+/* ============================================================
+   SessionHub — public site
+   ------------------------------------------------------------
+   Art direction: editorial restraint. Sections are indexed in
+   monospace, yellow appears only as a tick or the one action
+   worth taking, and the product is the artwork.
+
+   The hairline is a local device — a tick beside an index, a
+   divider inside a list — never a frame around the page. Two
+   rails running the full height made the site feel narrower
+   than it is, so the content now owns the viewport.
+   ============================================================ */
+
+.ls {
+  --ls-ground:  var(--bg);
+  --ls-panel:   var(--surface);
+  --ls-ink:     var(--text);
+  --ls-ink-2:   var(--text-secondary);
+  --ls-ink-3:   var(--text-muted);
+  --ls-rule:    color-mix(in srgb, var(--navy-900) 10%, transparent);
+  --ls-gutter:  clamp(20px, 4vw, 56px);
+  --ls-max:     1440px;
+  --ls-section: clamp(80px, 8vw, 144px);
+
+  --ls-display: clamp(2.5rem, 1.5rem + 3.9vw, 4.25rem);   /* 40 → 68 */
+  --ls-h2:      clamp(2rem,    1.28rem + 2.9vw, 3.5rem);  /* 32 → 56 */
+  --ls-h3:      clamp(1.375rem, 1.2rem + 0.7vw, 1.75rem); /* 22 → 28 */
+  --ls-body:    clamp(1rem,    0.96rem + 0.2vw, 1.125rem);/* 16 → 18 */
+  --ls-small:   0.9375rem;                                /* 15 */
+  --ls-meta:    0.75rem;                                  /* 12 */
+
+  background: var(--ls-ground);
+  color: var(--ls-ink);
+  overflow-x: clip;
+}
+
+:root[data-theme='dark'] .ls { --ls-rule: rgb(255 255 255 / 0.09); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .ls { --ls-rule: rgb(255 255 255 / 0.09); }
+}
+
+.ls-wrap {
+  width: 100%;
+  max-width: var(--ls-max);
+  margin-inline: auto;
+  padding-inline: var(--ls-gutter);
+}
+
+.ls h1, .ls h2, .ls h3 {
+  font-family: var(--font-display);
+  color: var(--ls-ink);
+  text-wrap: balance;
+}
+.ls h2 {
+  font-size: var(--ls-h2);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  font-weight: 600;
+  max-width: 16ch;
+}
+.ls h3 {
+  font-size: var(--ls-h3);
+  line-height: 1.16;
+  letter-spacing: -0.022em;
+  font-weight: 500;
+}
+.ls p { color: var(--ls-ink-2); font-weight: 400; }
+.ls-lede {
+  font-size: var(--ls-body);
+  line-height: 1.6;
+  letter-spacing: -0.008em;
+  max-width: 48ch;
+}
+
+.ls-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ls-ink-2);
+  margin-bottom: var(--s-4);
+}
+/* Yellow introduces the page once, in the hero. The chapter markers
+   that follow use the same shape in a neutral tone, so the accent stays
+   a signature rather than a texture repeated down the page. */
+.ls-marker i { width: 16px; height: 1.5px; background: var(--border-strong); border-radius: 2px; }
+.ls-hero-copy .ls-marker i { background: var(--accent); }
+/* The number is an index, not a headline: monospace, quiet, smaller. */
+.ls-marker em {
+  font-family: var(--font-mono);
+  font-style: normal;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--ls-ink-3);
+  font-weight: 400;
+}
+
+.ls-textlink {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: var(--fs-sm); font-weight: var(--fw-medium);
+  color: var(--ls-ink);
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--ls-rule);
+  transition: border-color var(--t-base) var(--ease), gap var(--t-base) var(--ease);
+}
+.ls-textlink:hover { border-bottom-color: var(--accent); gap: 10px; }
+
+.ls-section-head { margin-bottom: clamp(var(--s-7), 4vw, var(--s-9)); }
+
+/* ============================================================
+   NAVIGATION
+   Invisible while reading: transparent over the hero, a hairline
+   and a blur once the page moves.
+   ============================================================ */
+.ls-nav {
+  position: sticky; top: 0; z-index: var(--z-sticky);
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition:
+    background-color var(--t-slow) var(--ease),
+    border-color var(--t-slow) var(--ease);
+}
+.ls-nav.is-scrolled {
+  background: color-mix(in srgb, var(--ls-ground) 78%, transparent);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-bottom-color: var(--ls-rule);
+}
+.ls-nav-inner {
+  display: flex; align-items: center; gap: var(--s-9);
+  height: 72px;
+}
+
+.ls-logo {
+  display: inline-flex; align-items: center; gap: var(--s-3);
+  font-family: var(--font-display);
+  font-size: 1.0625rem; font-weight: 600;
+  letter-spacing: -0.025em; color: var(--ls-ink);
+  flex: none;
+}
+.ls-logo-mark {
+  display: grid; place-items: center;
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  background: var(--navy-900); color: var(--accent);
+  font-size: 0.8125rem; font-weight: var(--fw-bold);
+  letter-spacing: -0.04em;
+}
+:root[data-theme='dark'] .ls-logo-mark { background: var(--accent); color: var(--navy-900); }
+
+.ls-nav-links { display: flex; gap: var(--s-7); flex: 1; }
+.ls-nav-links a {
+  position: relative;
+  font-size: var(--ls-small);
+  font-weight: 450;
+  letter-spacing: -0.006em;
+  color: var(--ls-ink-3);
+  padding-block: 4px;
+  transition: color var(--t-base) var(--ease);
+}
+.ls-nav-links a:hover { color: var(--ls-ink); }
+
+.ls-nav-actions { display: flex; align-items: center; gap: var(--s-2); flex: none; }
+.ls-nav-toggle {
+  display: none;
+  width: 36px; height: 36px;
+  place-items: center;
+  border-radius: var(--r-md);
+  color: var(--ls-ink);
+  transition: background-color var(--t-fast) var(--ease);
+}
+.ls-nav-toggle:hover { background: var(--surface-3); }
+
+.ls-sheet {
+  display: none;
+  border-top: 1px solid var(--ls-rule);
+  background: var(--ls-panel);
+  padding: var(--s-4) var(--ls-gutter) var(--s-7);
+  animation: rise var(--t-base) var(--ease) both;
+}
+.ls-sheet nav { display: flex; flex-direction: column; }
+.ls-sheet nav a {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--s-4) 0;
+  border-bottom: 1px solid var(--ls-rule);
+  font-size: 1.125rem;
+  font-weight: var(--fw-medium);
+  color: var(--ls-ink);
+}
+.ls-sheet nav a svg { color: var(--ls-ink-3); }
+.ls-sheet-actions { display: flex; flex-direction: column; gap: var(--s-3); margin-top: var(--s-6); }
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.ls-hero {
+  padding-top: clamp(var(--s-6), 2.4vw, 36px);
+  position: relative;
+  background: linear-gradient(180deg,
+    var(--ls-ground) 0%,
+    color-mix(in srgb, var(--navy-900) 2%, var(--ls-ground)) 100%);
+}
+
+.ls-hero-top {
+  display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  /* The index sits with the eyebrow, not adrift beside the buttons. */
+  align-items: start;
+  padding-bottom: clamp(var(--s-6), 2.4vw, 40px);
+}
+.ls-hero-copy .reveal-words {
+  font-size: var(--ls-display);
+  line-height: 0.96;
+  letter-spacing: -0.045em;
+  font-weight: 600;
+  max-width: 13ch;
+  margin-bottom: var(--s-4);
+}
+.ls-hero-cta {
+  display: flex; align-items: center; gap: var(--s-6);
+  flex-wrap: wrap;
+  margin-top: var(--s-6);
+}
+
+/* An index of what the platform covers — three phrases, no rules. */
+/* The product breaks out of the text column and keeps going. */
+.ls-hero-stage {
+  --scroll: 0;
+  position: relative;
+  width: 100%;
+  /* The single intentional break in the grid: the product runs about
+     4% wider than the editorial column, so it reads as larger than the
+     page that contains it. Everything else stays on the 56px line. */
+  max-width: calc(var(--ls-max) + 96px);
+  margin-inline: auto;
+  padding: 0 clamp(16px, 2.2vw, 32px) var(--ls-section);
+  overflow-x: clip;
+}
+/* The ground the product stands on: an imperceptible cooling of the
+   page toward the product, and a horizon line at its base that runs
+   wider than the frame. The phone crosses the line — that overlap is
+   what reads as depth, not a shadow. */
+.ls-hero-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--navy-800) 4%, transparent) 78%);
+  pointer-events: none;
+}
+:root[data-theme='dark'] .ls-hero-glow {
+  background: linear-gradient(180deg, transparent 0%, rgb(124 156 200 / 0.05) 78%);
+}
+.ls-hero-stage::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  bottom: var(--ls-section);
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%, var(--ls-rule) 16%, var(--ls-rule) 84%, transparent 100%);
+  pointer-events: none;
+}
+.ls-hero-frame, .ls-hero-phone { z-index: 1; }
+
+.ls-hero-frame {
+  position: relative;
+  margin-inline: auto;
+  animation: hero-in 700ms var(--ease-out-soft) 200ms both;
+}
+.ls-hero-frame > .pf {
+  transform: translateY(calc(var(--scroll) * -18px));
+  will-change: transform;
+}
+@keyframes hero-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.ls-hero-phone {
+  position: absolute;
+  width: 208px;
+  /* Overlaps the frame's quiet right edge. The left of the screen —
+     identity, navigation, room code, metrics — stays uncovered. */
+  right: calc(var(--ls-gutter) * -0.45);
+  bottom: -64px;
+  z-index: 2;
+  transform: translateY(calc(var(--scroll) * -38px));
+  animation: hero-in 700ms var(--ease-out-soft) 460ms both;
+  will-change: transform;
+}
+
+/* ============================================================
+   01 — HOW IT WORKS
+   The one place horizontal rules earn their keep: a list.
+   ============================================================ */
+.ls-story { padding-block: var(--ls-section); }
+.ls-story-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(var(--s-7), 6vw, var(--s-10));
+  align-items: start;
+}
+.ls-story-head { position: sticky; top: 128px; }
+
+.ls-story-list { display: flex; flex-direction: column; }
+.ls-story-list li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: var(--s-5);
+  padding: var(--s-6) 0;
+  border-top: 1px solid var(--ls-rule);
+}
+.ls-story-list li:last-child { border-bottom: 1px solid var(--ls-rule); }
+.ls-story-n {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  padding-top: 6px;
+  color: var(--ls-ink-3);
+  transition: color var(--t-base) var(--ease);
+}
+.ls-story-list li:hover .ls-story-n { color: var(--accent-ink); }
+:root[data-theme='dark'] .ls-story-list li:hover .ls-story-n { color: var(--accent); }
+.ls-story-list h3 { font-size: 1.125rem; line-height: 1.25; margin-bottom: 5px; }
+.ls-story-list p {
+  font-size: var(--ls-small);
+  line-height: 1.6;
+  letter-spacing: -0.004em;
+  max-width: 46ch;
+}
+
+/* ============================================================
+   02 — THE PRODUCT
+   No border on the section: the tonal change is the separation.
+   ============================================================ */
+.ls-explore {
+  background: var(--ls-panel);
+  padding-block: var(--ls-section);
+}
+.ls-explore-head { max-width: 40ch; margin-bottom: var(--s-8); }
+.ls-explore-head p { margin-top: var(--s-4); font-size: var(--ls-body); line-height: 1.6; }
+
+.ls-tabs { display: flex; gap: var(--s-1); margin-bottom: var(--s-8); }
+.ls-tabs button {
+  padding: 10px var(--s-5);
+  border-radius: var(--r-full);
+  font-size: var(--ls-small);
+  font-weight: 500;
+  letter-spacing: -0.006em;
+  color: var(--ls-ink-2);
+  transition: background-color var(--t-base) var(--ease), color var(--t-base) var(--ease);
+}
+.ls-tabs button:hover { color: var(--ls-ink); background: var(--surface-3); }
+.ls-tabs button[aria-selected='true'] {
+  background: var(--navy-900); color: #fff; font-weight: var(--fw-semi);
+}
+:root[data-theme='dark'] .ls-tabs button[aria-selected='true'] { background: var(--accent); color: var(--navy-900); }
+
+.ls-explore-panel { animation: swap var(--t-slow) var(--ease-out-soft) both; }
+@keyframes swap {
+  from { opacity: 0; transform: translateY(10px) scale(0.995); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ============================================================
+   THE LIVE MOMENT — the page's pause
+   ============================================================ */
+.ls-live {
+  background: var(--navy-900);
+  padding-block: var(--ls-section);
+  --ls-rule: rgb(255 255 255 / 0.1);
+  --ls-ink: #fff;
+  --ls-ink-2: var(--navy-200);
+  --ls-ink-3: var(--navy-300);
+}
+.ls-live :focus-visible { outline-color: var(--accent); }
+.ls-live h2 { color: #fff; max-width: 15ch; }
+.ls-live-copy p { color: var(--navy-200); }
+
+.ls-live-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: clamp(var(--s-7), 6vw, var(--s-10));
+  align-items: center;
+}
+.ls-live-copy > p { font-size: var(--ls-body); line-height: 1.6; margin-top: var(--s-5); max-width: 34ch; }
+
+.ls-live-code {
+  display: flex;
+  gap: clamp(6px, 1vw, 10px);
+  margin-top: clamp(var(--s-8), 5vw, var(--s-9));
+}
+.ls-live-code span {
+  flex: 1 1 0;
+  max-width: 84px;
+  aspect-ratio: 3 / 4;
+  display: grid; place-items: center;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: var(--r-lg);
+  background: rgb(255 255 255 / 0.05);
+  font-family: var(--font-mono);
+  font-size: clamp(1.5rem, 3.4vw, 2.25rem);
+  font-weight: var(--fw-semi);
+  color: #fff;
+  animation: code-in 520ms var(--ease-out-soft) both;
+  animation-delay: calc(var(--i) * 70ms);
+}
+.ls-live-code span:first-child { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+@keyframes code-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.ls-live-visual { display: flex; justify-content: center; }
+.ls-live-visual .phone {
+  width: 300px;
+  border-radius: 38px;
+  padding: 10px;
+  box-shadow: 0 40px 80px -40px rgb(0 0 0 / 0.55);
+}
+.ls-live-visual .phone-screen { border-radius: 30px; padding: 22px 16px 16px; font-size: 12px; }
+.ls-live-visual .phone-question { font-size: 15px; }
+.ls-live-visual .phone-options li { font-size: 12px; padding: 10px 11px; }
+.ls-live-visual .phone-submit { padding: 11px; font-size: 12px; }
+
+/* ============================================================
+   03 — FOR INSTITUTIONS
+   Every cell is a label and a piece of interface.
+   ============================================================ */
+.ls-institution { padding-block: var(--ls-section); }
+
+.ls-bento {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-5);
+}
+.ls-bento-main { grid-column: span 2; grid-row: span 2; }
+.ls-bento-cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-6);
+  border-radius: var(--r-xl);
+  background: var(--ls-panel);
+  transition: background-color var(--t-base) var(--ease);
+}
+.ls-bento-cell:hover { background: color-mix(in srgb, var(--navy-900) 2%, var(--ls-panel)); }
+
+.ls-cell-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ls-ink-3);
+  flex: none;
+}
+
+/* Screenshots end in a fade, never on a hard edge mid-row. */
+.ls-crop {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--r-2xl);
+  background: var(--surface);
+}
+.ls-crop .pf { border: 0; border-radius: 0; box-shadow: none; }
+.ls-crop-top {
+  max-height: 470px;
+  border-bottom: 0;
+  border-radius: var(--r-2xl) var(--r-2xl) 0 0;
+  -webkit-mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
+}
+
+/* ============================================================
+   CLOSE
+   ============================================================ */
+.ls-cta {
+  background: var(--navy-900);
+  --ls-rule: rgb(255 255 255 / 0.1);
+  padding-block: clamp(var(--s-10), 8vw, 140px);
+}
+.ls-cta :focus-visible { outline-color: var(--accent); }
+.ls-cta-inner {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: var(--s-9); flex-wrap: wrap;
+}
+.ls-cta h2 {
+  color: #fff;
+  font-size: clamp(2rem, 1.3rem + 2.8vw, 3.5rem);
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  max-width: 14ch;
+}
+.ls-cta p { color: var(--navy-300); margin-top: var(--s-5); font-size: var(--ls-small); }
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.ls-footer { background: var(--ls-panel); border-top: 1px solid var(--ls-rule); }
+.ls-footer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) repeat(2, minmax(0, 1fr));
+  gap: var(--s-8);
+  padding-block: clamp(var(--s-9), 6vw, var(--s-11));
+}
+.ls-footer-brand p {
+  margin-top: var(--s-4);
+  max-width: 32ch;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--ls-ink-3);
+}
+.ls-footer h3 {
+  font-family: var(--font);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ls-ink-3);
+  font-weight: 500;
+  margin-bottom: var(--s-4);
+}
+.ls-footer ul { display: flex; flex-direction: column; gap: var(--s-3); }
+.ls-footer li a {
+  font-size: var(--fs-sm);
+  color: var(--ls-ink-2);
+  transition: color var(--t-fast) var(--ease);
+}
+.ls-footer li a:hover { color: var(--ls-ink); }
+.ls-footer-base {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s-4); flex-wrap: wrap;
+  padding-block: var(--s-5);
+  border-top: 1px solid var(--ls-rule);
+  font-size: var(--fs-caption);
+  color: var(--ls-ink-3);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1100px) {
+  .ls-story-grid { grid-template-columns: minmax(0, 1fr); }
+  .ls-story-head { position: static; }
+  .ls-live-grid { grid-template-columns: minmax(0, 1fr); }
+  .ls-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ls-bento-main { grid-column: span 2; grid-row: auto; }
+}
+
+@media (max-width: 900px) {
+  .ls { --ls-gutter: var(--s-5); }
+  .ls-nav-links, .ls-nav-login { display: none; }
+  .ls-nav-toggle { display: grid; }
+  .ls-sheet { display: block; }
+
+  .ls-hero-phone { right: -12px; bottom: -40px; width: 190px; }
+  .ls-hero-phone .phone { width: 190px; padding: 6px; border-radius: 24px; }
+  .ls-hero-phone .phone-screen { padding: 14px 11px 11px; font-size: 9.5px; border-radius: 19px; }
+  .ls-hero-phone .phone-question { font-size: 11px; margin: 9px 0; }
+  .ls-hero-phone .phone-options li { padding: 6px 7px; font-size: 9.5px; }
+  .ls-hero-phone .phone-options .pf-key { width: 15px; height: 15px; }
+  .ls-hero-phone .phone-submit { padding: 7px; font-size: 9.5px; }
+}
+
+@media (max-width: 640px) {
+  .ls-hero { padding-top: var(--s-9); }
+  /* The index is supplementary; at this width the sections below say
+     the same thing with more room. */
+  .ls-hero-stage { padding-bottom: var(--s-10); }
+  .ls-hero-cta { gap: var(--s-5); }
+  .ls-hero-cta .btn { width: 100%; }
+  /* Only the part worth reading at this size, faded rather than cut.
+     The mask sits on the screenshot, so the phone over it stays solid. */
+  .ls-hero-frame > .pf {
+    max-height: 340px;
+    box-shadow: none;
+    -webkit-mask-image: linear-gradient(to bottom, #000 74%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 74%, transparent 100%);
+  }
+  .ls-hero-phone { bottom: -24px; right: -6px; width: 170px; }
+  .ls-story-list li { grid-template-columns: 44px minmax(0, 1fr); gap: var(--s-4); }
+  .ls-story-n { font-size: 1.125rem; }
+  .ls-tabs { gap: 0; }
+  .ls-tabs button { padding-inline: var(--s-3); font-size: var(--fs-xs); }
+  .ls-bento, .ls-bento-main { grid-template-columns: minmax(0, 1fr); grid-column: 1 / -1; }
+  .ls-footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-7); }
+  .ls-footer-brand { grid-column: span 2; }
+  .ls-crop-top { max-height: 380px; }
+  .ls-cta-inner { gap: var(--s-7); }
+  .ls-cta-inner .btn { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ls-hero-frame, .ls-hero-phone, .ls-live-code span, .ls-explore-panel { animation: none; }
+  .ls-hero-frame > .pf, .ls-hero-phone { transform: none; }
+}
+
+/* ============================================================
+   THE SIGNATURE DEVICE — synchronisation
+   ------------------------------------------------------------
+   One code, one room, many answers. Forty-two marks stand for
+   the students in the hall; twenty-six of them have answered.
+   They fill in sequence when the section is reached, which is
+   the product's whole idea expressed without a sentence.
+   ============================================================ */
+.ls-sync { margin-top: clamp(var(--s-7), 4vw, var(--s-8)); }
+
+.ls-sync-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  margin-bottom: var(--s-4);
+  font-size: var(--ls-meta);
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--navy-300);
+}
+.ls-sync-live { display: inline-flex; align-items: center; gap: 7px; color: #fff; }
+/* Every live indicator on the page runs off this one timeline, so they
+   are, literally, in sync. */
+.ls-sync-live i {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: live-pulse 2.4s var(--ease-in-out) infinite;
+}
+
+/* 554px is exactly the width of the six room-code tiles above it, so
+   the room aligns to the code that opened it. */
+.ls-sync-room {
+  display: grid;
+  grid-template-columns: repeat(21, minmax(0, 1fr));
+  gap: 7px;
+  max-width: 554px;
+}
+.ls-sync-room span {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.11);
+  transition: background-color var(--t-base) var(--ease);
+}
+.reveal.in .ls-sync-room span.is-answered {
+  background: rgb(255 255 255 / 0.92);
+  animation: answer-in 420ms var(--ease-out-soft) both;
+  animation-delay: calc(320ms + var(--i) * 26ms);
+}
+@keyframes answer-in {
+  from { opacity: 0.15; transform: scale(0.55); background: rgb(255 255 255 / 0.11); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.28; }
+}
+
+@media (max-width: 560px) {
+  .ls-sync-room { grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 5px; }
+  .ls-sync-meta { gap: var(--s-4); flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal.in .ls-sync-room span.is-answered { animation: none; }
+  .ls-sync-live i { animation: none; }
+}
+
+/* ============================================================
+   EXPLORER CONTROLS
+   ============================================================ */
+.ls-explore-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  flex-wrap: wrap;
+  margin-bottom: var(--s-8);
+}
+.ls-explore-caption {
+  font-family: var(--font-mono);
+  font-size: var(--ls-meta);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ls-ink-3);
+  animation: caption-in 380ms var(--ease-out-soft) both;
+}
+@keyframes caption-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The indicator travels; the labels stay still. */
+.ls-tabs { position: relative; }
+.ls-tabs-indicator {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 0;
+  width: var(--ind-w, 0);
+  transform: translateX(var(--ind-x, 0));
+  border-radius: var(--r-full);
+  background: var(--navy-900);
+  transition:
+    transform 480ms var(--ease-out-soft),
+    width 480ms var(--ease-out-soft);
+}
+:root[data-theme='dark'] .ls-tabs-indicator { background: var(--accent); }
+.ls-tabs button { position: relative; z-index: 1; background: none; }
+.ls-tabs button:hover { background: none; color: var(--ls-ink); }
+.ls-tabs button[aria-selected='true'] { background: none; color: #fff; }
+:root[data-theme='dark'] .ls-tabs button[aria-selected='true'] { color: var(--navy-900); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ls-tabs-indicator { transition: none; }
+  .ls-explore-caption { animation: none; }
+}

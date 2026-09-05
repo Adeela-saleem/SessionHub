@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="SessionHub student dashboard - join a live session by room code, answer quizzes in real time, and track your attendance and grades.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Dashboard · SessionHub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/primitives.css">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="dashboard.css">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   Step-by-Step Quiz Flow — scoped under .sq- prefix
+   Uses existing CSS variables. No external dependencies.
+═══════════════════════════════════════════════════════════════ */
+
+/* Progress header: "Question 2 of 5" + progress bar */
+.sq-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.sq-counter {
+  font-family: var(--font-mono);
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--blue-700);
+  letter-spacing: .04em;
+}
+.sq-type-pill {
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.sq-progress-track {
+  height: 5px;
+  background: var(--blue-100);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+.sq-progress-fill {
+  height: 100%;
+  background: var(--ep-600);
+  border-radius: 999px;
+  transition: width .4s ease;
+}
+
+/* Question text */
+.sq-qtext {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--blue-900);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+/* MCQ option cards */
+.sq-options { display: flex; flex-direction: column; gap: 8px; }
+.sq-opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: .9rem;
+  color: var(--ink);
+  text-align: left;
+  transition: border-color .15s, background .15s;
+  width: 100%;
+}
+.sq-opt:hover {
+  border-color: var(--blue-500);
+  background: var(--blue-100);
+}
+.sq-opt.selected {
+  border-color: var(--blue-700);
+  background: var(--blue-100);
+  font-weight: 600;
+}
+.sq-opt-letter {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: .8rem;
+  color: var(--blue-700);
+  background: var(--blue-100);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sq-opt.selected .sq-opt-letter {
+  background: var(--ep-600);
+  color: #fff;
+}
+
+/* Short-answer textarea */
+.sq-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-s);
+  font-family: var(--font-body);
+  font-size: .92rem;
+  color: var(--ink);
+  resize: vertical;
+  line-height: 1.55;
+  transition: border-color .15s;
+}
+.sq-textarea:focus {
+  outline: none;
+  border-color: var(--blue-500);
+}
+
+/* Navigation row: indicator + Next/Submit button */
+.sq-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 18px;
+  gap: 12px;
+}
+.sq-indicator {
+  font-size: .82rem;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  flex: 1;
+}
+.sq-indicator.has-answer {
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* Completion / waiting states */
+.sq-state-box {
+  text-align: center;
+  padding: 32px 20px;
+  border-radius: var(--radius-m);
+  background: var(--blue-100);
+}
+.sq-state-box.submitted {
+  background: var(--success-soft);
+}
+.sq-state-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--blue-900);
+  margin-bottom: 6px;
+}
+.sq-state-sub {
+  font-size: .85rem;
+  color: var(--ink-soft);
+}
+.sq-score-chip {
+  display: inline-block;
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  padding: 4px 14px;
+  border-radius: 999px;
+  margin-top: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Analytics panel — progress bars, metric grid, course rows
+═══════════════════════════════════════════════════════════════ */
+.an-course-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: .86rem;
+}
+.an-course-row:last-child { border-bottom: none; }
+.an-course-name { flex: 1; color: var(--ink); font-weight: 500; }
+.an-course-pct  { font-family: var(--font-mono); font-size: .78rem; color: var(--blue-700); min-width: 36px; text-align: right; }
+.an-prog-track {
+  width: 120px;
+  height: 7px;
+  background: var(--blue-100);
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.an-prog-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--blue-700);
+}
+.an-prog-fill.high   { background: var(--green); }
+.an-prog-fill.medium { background: var(--yellow-400); }
+.an-prog-fill.low    { background: var(--red); }
+
+/* Performance snapshot grid */
+.an-snap-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.an-snap-item {
+  background: var(--blue-100);
+  border-radius: var(--radius-m);
+  padding: 16px 18px;
+}
+.an-snap-label {
+  font-size: .76rem;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 6px;
+}
+.an-snap-val {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--blue-900);
+  font-weight: 700;
+}
+
+/* Grade tier badges */
+.tier-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.tier-a { background: var(--success-soft); color: var(--green); }
+.tier-b { background: var(--warning-soft); color: var(--warning); }
+.tier-c { background: var(--danger-soft); color: var(--red); }
+
+/* ── Live Session Alert ─────────────────────────────────────────
+   Appears at the top of the Join Session panel automatically
+   when a teacher starts a session for an enrolled course.
+   Uses the existing lc-pulse animation already defined above.
+──────────────────────────────────────────────────────────────── */
+.live-alert-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--ep-600);
+  border-radius: var(--radius-m);
+  padding: 18px 22px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 24px rgb(var(--c-shadow) / 0.2);
+}
+.live-alert-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.live-alert-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: lc-pulse 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.live-alert-label {
+  font-family: var(--font-mono);
+  font-size: .66rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: #fff;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.live-alert-body {
+  flex: 1;
+  min-width: 0;
+}
+.live-alert-course {
+  font-family: var(--font-display);
+  font-size: .98rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.live-alert-meta {
+  font-size: .8rem;
+  color: rgba(255,255,255,.55);
+}
+.live-alert-code {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  background: rgba(255,255,255,.1);
+  color: var(--yellow-400);
+  padding: 1px 7px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+@media(max-width:600px) {
+  .live-alert-card { flex-direction:column; align-items:flex-start; }
+}
+.lc-container { margin-top:4px; border-radius:var(--radius-m); overflow:hidden; border:1.5px solid var(--line); }
+.lc-header    { display:flex; justify-content:space-between; align-items:center; padding:11px 16px; background:var(--surface-2); }
+.lc-header-title { display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-size:.9rem; color:var(--text); font-weight:600; }
+.lc-live-dot  { width:8px; height:8px; border-radius:50%; background:var(--danger); animation:lc-pulse 1.4s ease-in-out infinite; flex-shrink:0; }
+@keyframes lc-pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+.lc-iframe    { width:100%; height:540px; border:none; display:block; background:#000; }
+
+/* ── Student Weekly Schedule ────────────────────────────────── */
+.week-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; }
+.week-day-col  { min-width:0; }
+.week-day-header {
+  font-family:var(--font-mono); font-size:.68rem; text-transform:uppercase;
+  letter-spacing:.08em; color:var(--ink-soft); text-align:center;
+  padding:8px 4px; border-bottom:2px solid var(--line); margin-bottom:8px;
+}
+.week-day-header.today { color:var(--blue-700); border-color:var(--blue-700); font-weight:700; }
+.week-slot {
+  background:var(--blue-100); border-left:3px solid var(--blue-700);
+  border-radius:var(--radius-s); padding:8px 10px; margin-bottom:6px;
+}
+.week-slot-course  { display:block; font-weight:600; font-size:.78rem; color:var(--blue-900); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
+.week-slot-teacher { display:block; font-size:.7rem; color:var(--ink-soft); margin-bottom:2px; }
+.week-slot-time    { font-family:var(--font-mono); font-size:.68rem; color:var(--ink-soft); }
+.week-empty { text-align:center; color:var(--line); font-size:.78rem; padding:18px 4px; }
+@media(max-width:900px) { .week-grid { grid-template-columns:repeat(3,1fr); } }
+@media(max-width:560px) { .week-grid { grid-template-columns:1fr 1fr; } }
+
+@media(max-width:900px) { .an-snap-grid { grid-template-columns: 1fr; } }
+
+/* ── Profile Panel (professional full-width) ────────────────────
+   Full-width settings card, larger avatar, generous row spacing.
+──────────────────────────────────────────────────────────────── */
+.prof-header   { display:flex; align-items:center; gap:22px; padding:8px 0 26px; }
+.prof-av-wrap  { position:relative; cursor:pointer; flex-shrink:0; }
+.profile-av-lg {
+  width:88px; height:88px; border-radius:50%; overflow:hidden;
+  background:var(--ep-600); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-size:2rem; font-weight:700; font-family:var(--font-display);
+  transition:opacity .15s;
+}
+.prof-av-wrap:hover .profile-av-lg { opacity:.82; }
+.profile-av-lg img { width:100%; height:100%; object-fit:cover; }
+.prof-av-edit {
+  position:absolute; bottom:2px; right:2px;
+  width:26px; height:26px; border-radius:50%;
+  background:var(--blue-700); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  pointer-events:none; box-shadow:0 0 0 2px #fff;
+}
+.prof-av-edit svg { width:12px; height:12px; }
+.prof-hd-name  {
+  font-weight:700; font-size:1.25rem; color:var(--blue-900);
+  margin-bottom:4px; line-height:1.2;
+}
+.prof-hd-email { font-size:.88rem; color:var(--ink-soft); }
+.prof-divider  { height:1px; background:var(--line); margin:0 -24px; }
+.prof-section-lbl {
+  font-family:var(--font-mono); font-size:.7rem; text-transform:uppercase;
+  letter-spacing:.1em; color:var(--ink-soft);
+  padding:22px 0 10px; font-weight:600;
+}
+.prof-row {
+  display:flex; align-items:center; min-height:66px;
+  border-bottom:1px solid var(--line); gap:16px;
+}
+.prof-lbl {
+  width:220px; flex-shrink:0;
+  font-size:.93rem; font-weight:600; color:var(--blue-900);
+}
+.prof-val-input {
+  flex:1; border:none; outline:none;
+  text-align:right; font-size:.93rem; color:var(--ink-soft);
+  background:transparent; font-family:inherit; padding:6px 0;
+}
+.prof-val-input:focus    { color:var(--blue-900); }
+.prof-val-input::placeholder { color:var(--line); }
+.prof-val-text { flex:1; text-align:right; font-size:.93rem; color:var(--ink-soft); }
+.prof-locked   {
+  margin-top:20px; padding:12px 16px;
+  background:var(--blue-100); border-radius:var(--radius-s);
+  border-left:3px solid var(--blue-700);
+  font-size:.82rem; color:var(--ink-soft); line-height:1.5;
+}
+/* ── Live Q&A chat styles ────────────────────────────────── */
+.qa-item { padding:10px 0; border-bottom:1px solid var(--line); }
+.qa-item:last-child { border-bottom:none; }
+.qa-question { display:flex; align-items:flex-start; gap:9px; }
+.qa-av {
+  width:28px; height:28px; border-radius:50%;
+  background:var(--blue-100); color:var(--blue-700);
+  font-size:9px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.qa-av-own { background:var(--ep-600) !important; color:#fff !important; }
+.qa-body { flex:1; min-width:0; }
+.qa-meta {
+  display:flex; align-items:center; gap:7px;
+  margin-bottom:3px; font-size:.8rem; color:var(--ink);
+  flex-wrap:wrap;
+}
+.qa-time { font-size:.72rem; color:var(--ink-soft); }
+.qa-text { font-size:.84rem; color:var(--ink); line-height:1.45; }
+.qa-reply {
+  background:var(--surface-2);
+  border-left:3px solid var(--blue-500);
+  border-radius:0 7px 7px 0;
+  padding:8px 12px;
+  margin:8px 0 0 37px;
+}
+.qa-reply-label {
+  font-size:.68rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--blue-700); margin-bottom:4px;
+}
+.qa-reply-text { font-size:.83rem; color:var(--ink); line-height:1.45; }
+
+.dash-user-chip { cursor:pointer; }
+
+/* ── Profile panel — password rows ─────────────────────────── */
+.prof-pwd-wrap {
+  flex:1; display:flex; align-items:center; gap:6px; justify-content:flex-end;
+}
+.prof-pwd-wrap .prof-val-input { text-align:right; flex:1; }
+.prof-pwd-eye {
+  flex-shrink:0; background:none; border:none; cursor:pointer;
+  padding:4px; color:var(--ink-soft);
+  display:flex; align-items:center; transition:color .15s;
+}
+.prof-pwd-eye:hover { color:var(--blue-700); }
+.prof-pwd-eye:focus { outline:none; }
+.prof-pwd-eye svg   { width:16px; height:16px; pointer-events:none; }
+.prof-pwd-hint {
+  width:100%; font-size:.76rem; color:var(--ink-soft); padding:4px 0 10px;
+}
+</style>
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to main content</a>
+<div class="dash">
+  <aside class="dash-sidebar">
+    <a href="index.html" class="logo">
+      <svg class="cap" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M24 6L4 16L24 26L44 16L24 6Z" fill="#FFC600"/>
+        <path d="M12 21V32C12 32 17 37 24 37C31 37 36 32 36 32V21L24 27L12 21Z" fill="#fff"/>
+      </svg>
+      SessionHub
+    </a>
+    <div class="dash-role-badge">Student Console</div>
+    <ul class="dash-nav">
+      <li><button data-tab="join" class="active"><span class="icon">◎</span> Join Session</button></li>
+      <li><button data-tab="courses"><span class="icon">▤</span> My Courses</button></li>
+      <li><button data-tab="schedule"><span class="icon">▦</span> Schedule</button></li>
+      <li><button data-tab="analytics"><span class="icon">▲</span> My Analytics</button></li>
+      <li><button data-tab="profile"><span class="icon">◈</span> My Profile</button></li>
+    </ul>
+    <div class="dash-logout"><button id="logoutBtn">Log out</button></div>
+  </aside>
+
+  <main class="dash-main" id="main">
+    <div class="dash-topbar">
+      <div>
+        <h1 id="pageTitle">Join Session</h1>
+        <p>Enter a session code to join a live class instantly.</p>
+      </div>
+      <div class="dash-user-chip"><div class="av" id="userAv">S</div><span id="userName">Student</span></div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         JOIN SESSION + STEP-BY-STEP QUIZ
+    ══════════════════════════════════════ -->
+    <section class="tab-panel active" id="panel-join">
+
+      <!-- Live session alert — injected by student.js listenForLiveSessions()
+           when a teacher starts a session for an enrolled course.
+           Hidden by default; appears automatically, no page refresh needed. -->
+      <div id="liveSessionAlert" aria-live="polite"></div>
+
+      <div class="card" id="joinCard">
+        <div class="card-row"><h3>Enter a session code</h3></div>
+        <form id="joinForm" style="display:flex; gap:10px;">
+          <input type="text" id="joinCode" placeholder="e.g. DBMS-204" required
+            style="flex:1; padding:13px; border:1.5px solid var(--line); border-radius:8px;
+                   font-family:var(--font-mono); text-transform:uppercase;">
+          <button class="btn btn-primary" type="submit">Join</button>
+        </form>
+        <div id="joinMsg" aria-live="polite" class="form-msg" style="margin-top:14px;"></div>
+      </div>
+
+      <div id="liveSessionPanel" style="display:none;">
+        <div class="card">
+          <div class="card-row">
+            <h3 id="liveSessionTitle">Connected to session</h3>
+            <div class="tag-row">
+              <span id="teacherPresenceBadge" class="badge pending" style="display:none;"></span>
+              <span class="badge active"><span class="loading-dot"></span>Live</span>
+            </div>
+          </div>
+          <p style="margin:0; font-size:.84rem;">
+            Quizzes and polls from your teacher will appear below in real time.
+          </p>
+        </div>
+
+        <!-- Live class card — hidden by default; appears automatically when
+             the teacher starts a Daily.co session via the teacher dashboard.
+             student.js listenSessionDoc() watches the session document and
+             sets the iframe src when meetingUrl is written to Firestore. -->
+        <div class="card" id="liveClassCard" style="display:none;">
+          <div class="card-row">
+            <h3>Live Class</h3>
+            <span class="badge active"><span class="loading-dot"></span>In session</span>
+          </div>
+          <div class="lc-container">
+            <div class="lc-header">
+              <span class="lc-header-title">
+                <span class="lc-live-dot"></span>
+                Your teacher has started a live video class
+              </span>
+            </div>
+            <iframe id="studentMeetingFrame" class="lc-iframe"
+              allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write"
+              title="Live class video call">
+            </iframe>
+          </div>
+        </div>
+
+        <!-- Live quiz — full-width, step-by-step engine renders here -->
+        <div class="card" id="liveQuizCard">
+          <div class="card-row"><h3>Live Quiz</h3><span id="quizStatusBadge" class="badge" style="display:none;"></span></div>
+          <div id="liveQuiz" aria-live="polite" aria-atomic="true"><p class="empty-state">No quiz posted yet. Hang tight.</p></div>
+        </div>
+
+        <!-- Live poll + Q&A side by side -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-row"><h3>Live Poll</h3></div>
+            <div id="livePoll"><p class="empty-state">No poll posted yet.</p></div>
+          </div>
+          <div class="card">
+            <div class="card-row"><h3>Ask a Question</h3></div>
+            <div id="qaFeed"
+              style="max-height:260px; overflow-y:auto; margin-bottom:12px;
+                     border:1px solid var(--line); border-radius:10px; padding:0 12px;">
+              <p class="empty-state" style="padding:10px 0; font-size:.82rem;">
+                Join a session to see the Q&amp;A board.</p>
+            </div>
+            <form id="qaForm" style="display:flex; gap:10px;">
+              <input type="text" id="qaText" placeholder="Type your question for the teacher…" required
+                style="flex:1; padding:11px; border:1.5px solid var(--line); border-radius:8px;">
+              <button class="btn btn-sm btn-outline" type="submit">Send</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MY COURSES — unchanged -->
+    <section class="tab-panel" id="panel-courses">
+      <div class="card">
+        <div class="card-row"><h3>Enrolled courses</h3></div>
+        <table id="coursesTable">
+          <thead><tr><th>Course</th><th>Code</th><th>Department</th><th>Teacher</th></tr></thead>
+          <tbody><tr><td colspan="4" class="empty-state">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         SCHEDULE — auto-populated from enrolled courses
+    ══════════════════════════════════════ -->
+    <section class="tab-panel" id="panel-schedule">
+      <div class="card">
+        <div class="card-row">
+          <h3>Your weekly timetable</h3>
+          <span style="font-size:.8rem; color:var(--ink-soft);">Auto-populated from your enrolled courses.</span>
+        </div>
+        <p style="font-size:.84rem; color:var(--ink-soft); margin-bottom:18px;">
+          Schedules are set by your teachers. This view updates automatically when your teacher adds or changes a time slot.
+        </p>
+        <div id="studentWeeklyCalendar"><p class="empty-state">Loading your schedule...</p></div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         MY ANALYTICS — enhanced
+    ══════════════════════════════════════ -->
+    <section class="tab-panel" id="panel-analytics">
+
+      <!-- Row 1: 4-KPI metrics grid -->
+      <div class="grid-4">
+        <div class="card kpi"><b id="kpiAttendance">—</b><span>Attendance rate</span></div>
+        <div class="card kpi"><b id="kpiSessionsJoined">—</b><span>Sessions joined</span></div>
+        <div class="card kpi"><b id="kpiQuizTaken">—</b><span>Quizzes attempted</span></div>
+        <div class="card kpi"><b id="kpiCoursesEnrolled">—</b><span>Enrolled courses</span></div>
+      </div>
+
+      <!-- Row 2: Course attendance breakdown + activity chart -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-row"><h3>Course attendance breakdown</h3></div>
+          <div id="courseAttendanceList"><p class="empty-state">Loading…</p></div>
+        </div>
+        <div class="card">
+          <div class="card-row"><h3>Quiz activity over time</h3></div>
+          <canvas id="chartScores" height="120"></canvas>
+        </div>
+      </div>
+
+      <!-- Row 3: Performance snapshot -->
+      <div class="card">
+        <div class="card-row"><h3>Performance snapshot</h3></div>
+        <div class="an-snap-grid">
+          <div class="an-snap-item">
+            <div class="an-snap-label">Quizzes submitted</div>
+            <div class="an-snap-val" id="perfQuizzes">—</div>
+          </div>
+          <div class="an-snap-item">
+            <div class="an-snap-label">Sessions attended</div>
+            <div class="an-snap-val" id="perfSessions">—</div>
+          </div>
+          <div class="an-snap-item">
+            <div class="an-snap-label">Overall completion</div>
+            <div class="an-snap-val" id="perfCompletion">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 4: Grade trend table -->
+      <div class="card">
+        <div class="card-row"><h3>Quiz submission log</h3></div>
+        <table id="quizLogTable">
+          <thead>
+            <tr><th>#</th><th>Session</th><th>Answer</th><th>Type</th><th>Submitted</th></tr>
+          </thead>
+          <tbody id="quizLogBody">
+            <tr><td colspan="5" class="empty-state">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════
+         MY PROFILE — redesigned
+    ══════════════════════════════════════ -->
+    <section class="tab-panel" id="panel-profile">
+      <div class="card prof-card">
+
+        <!-- Header: clickable avatar + name + email -->
+        <div class="prof-header">
+          <div class="prof-av-wrap" id="profAvWrap" title="Click to change photo">
+            <div class="profile-av-lg" id="profileAvLg">S</div>
+            <div class="prof-av-edit" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+              </svg>
+            </div>
+            <input type="file" id="profilePicFile" accept="image/*" style="display:none">
+          </div>
+          <div>
+            <div class="prof-hd-name" id="profileDisplayName">Student</div>
+            <div class="prof-hd-email" id="profileDisplayEmail"></div>
+          </div>
+        </div>
+
+        <div class="prof-divider"></div>
+
+        <!-- Editable field rows -->
+        <form id="profileForm" style="margin:0;">
+          <div class="prof-section-lbl">Personal Information</div>
+          <div class="prof-row">
+            <span class="prof-lbl">Name</span>
+            <input class="prof-val-input" id="profileName" type="text" required placeholder="Your name">
+          </div>
+          <div class="prof-row">
+            <span class="prof-lbl">Email account</span>
+            <span class="prof-val-text" id="profEmailRowVal"></span>
+          </div>
+          <div class="prof-row">
+            <span class="prof-lbl">Mobile number</span>
+            <input class="prof-val-input" id="profileContact" type="text" placeholder="Add number">
+          </div>
+          <div class="prof-row">
+            <span class="prof-lbl">Department</span>
+            <input class="prof-val-input" id="profileDept" type="text" placeholder="Add department">
+          </div>
+
+          <!-- Password Management section -->
+          <div class="prof-section-lbl" style="padding-top:18px;">Password Management</div>
+          <div class="prof-row">
+            <span class="prof-lbl">Current password</span>
+            <div class="prof-pwd-wrap">
+              <input class="prof-val-input" id="profileCurrentPwd" type="password"
+                     placeholder="Required to change password" autocomplete="current-password">
+              <button type="button" class="prof-pwd-eye"
+                      data-target="profileCurrentPwd" aria-label="Show password">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="prof-row" style="flex-wrap:wrap; border-bottom:none;">
+            <span class="prof-lbl">New password</span>
+            <div class="prof-pwd-wrap">
+              <input class="prof-val-input" id="profileNewPwd" type="password"
+                     placeholder="Leave blank to keep current" autocomplete="new-password">
+              <button type="button" class="prof-pwd-eye"
+                      data-target="profileNewPwd" aria-label="Show password">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+            <span class="prof-pwd-hint">
+              Leave blank if you do not want to change your password.
+            </span>
+          </div>
+
+          <div class="prof-locked">
+            Role and enrollment year are set during registration and cannot be changed here.
+            Contact your administrator for any account-level changes.
+          </div>
+
+          <div style="display:flex; align-items:center; gap:14px; margin-top:20px;">
+            <button class="btn btn-primary" type="submit" id="profileSaveBtn">Save Change</button>
+            <div id="profileMsg" class="form-msg" style="margin:0;"></div>
+          </div>
+        </form>
+
+      </div>
+    </section>
+  </main>
+</div>
+
+<script type="module" src="firebase-config.js"></script>
+<script type="module" src="student.js"></script>
+<script src="theme-toggle.js"></script>
+</body>
+</html>

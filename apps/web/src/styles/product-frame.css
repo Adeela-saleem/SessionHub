@@ -1,0 +1,629 @@
+/* ============================================================
+   Product frames
+   ------------------------------------------------------------
+   Marketing-scale reproductions of application screens. They
+   mirror the shell exactly — navy rail, yellow active marker,
+   hairline stat grid, badge tones — at roughly two-thirds the
+   density, so a whole screen reads at a glance on a page.
+
+   Everything is sized in `em` from a single root font-size, so
+   a frame can be scaled by changing one number.
+   ============================================================ */
+
+.pf {
+  --pf-radius: 12px;
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 55%, transparent);
+  border-radius: var(--pf-radius);
+  background: var(--surface);
+  /* Barely there: the frame should read as a plane, not an object
+     hovering above the page. */
+  box-shadow:
+    0 1px 1px rgb(7 26 51 / 0.03),
+    0 12px 28px -14px rgb(7 26 51 / 0.14),
+    0 40px 70px -50px rgb(7 26 51 / 0.22);
+  overflow: hidden;
+  color: var(--text);
+  contain: paint;
+}
+
+/* ── Browser chrome ─────────────────────────────────────── */
+.pf-chrome {
+  display: flex;
+  align-items: center;
+  gap: 1.4em;
+  padding: 0.9em 1.2em;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.pf-lights { display: flex; gap: 0.5em; }
+.pf-lights i { width: 0.7em; height: 0.7em; border-radius: 50%; background: var(--border-strong); }
+.pf-url {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.3em 0.9em;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 0.86em;
+  color: var(--text-muted);
+}
+.pf-url span { color: var(--text); }
+.pf-url-lock {
+  width: 0.55em; height: 0.75em;
+  border: 1.2px solid currentColor;
+  border-radius: 1.5px;
+  position: relative;
+  opacity: 0.7;
+}
+.pf-url-lock::before {
+  content: '';
+  position: absolute; left: 50%; top: -0.42em;
+  transform: translateX(-50%);
+  width: 0.5em; height: 0.42em;
+  border: 1.2px solid currentColor;
+  border-bottom: 0;
+  border-radius: 0.3em 0.3em 0 0;
+}
+
+/* A frame is a closed system. The site's prose colour is set with
+   `.ls p`, which outranks a single-class rule inside here — on the dark
+   section that repainted the phone's question in navy-200 on white. An
+   equal-specificity reset, in the sheet that loads last, settles it. */
+.pf p, .phone p { color: inherit; }
+
+.pf-body { display: grid; grid-template-columns: 12.5em minmax(0, 1fr); }
+/* A frame shown without its rail collapses to one column rather than
+   leaving the rail's track behind as empty space. */
+.pf-body.is-solo { grid-template-columns: minmax(0, 1fr); }
+.pf-main { min-width: 0; background: var(--bg); }
+
+/* ── The navy rail ──────────────────────────────────────── */
+.pf-side {
+  background: var(--navy-900);
+  padding: 0 0.8em 1.2em;
+  color: var(--navy-200);
+}
+:root[data-theme='dark'] .pf-side { background: #0A1220; }
+.pf-brand {
+  display: flex; align-items: center; gap: 0.7em;
+  height: 3.4em;
+  margin: 0 -0.8em 1em;
+  padding: 0 1.1em;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95em;
+  letter-spacing: -0.02em;
+}
+.pf-brand span {
+  display: grid; place-items: center;
+  width: 1.7em; height: 1.7em;
+  border-radius: 0.45em;
+  background: var(--accent);
+  color: var(--navy-900);
+  font-size: 0.85em;
+  font-weight: 700;
+}
+.pf-navgroup + .pf-navgroup { margin-top: 1.1em; }
+.pf-navlabel {
+  display: block;
+  padding: 0 0.7em 0.5em;
+  font-size: 0.68em;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(180 198 222 / 0.6);
+}
+.pf-navitem {
+  position: relative;
+  display: flex; align-items: center; gap: 0.7em;
+  height: 2.5em;
+  padding: 0 0.7em;
+  border-radius: 0.55em;
+  font-size: 0.92em;
+  color: var(--navy-200);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.pf-navitem svg { flex: none; color: rgb(180 198 222 / 0.7); }
+.pf-navitem.is-active {
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+  font-weight: 600;
+}
+.pf-navitem.is-active svg { color: var(--accent); }
+.pf-navitem.is-active::before {
+  content: '';
+  position: absolute; left: -0.7em; top: 50%;
+  transform: translateY(-50%);
+  width: 0.25em; height: 1.3em;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+}
+
+/* ── Top bar and page head ──────────────────────────────── */
+.pf-top {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 3.4em;
+  padding: 0 1.6em;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.pf-crumbs { display: flex; gap: 0.5em; font-size: 0.9em; color: var(--text-muted); }
+.pf-crumbs i { font-style: normal; margin-right: 0.5em; opacity: 0.5; }
+.pf-crumbs span:last-child { color: var(--text); font-weight: 500; }
+
+.pf-pad { padding: 1.35em 1.5em; display: flex; flex-direction: column; gap: 1em; }
+.pf-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1em; }
+.pf-eyebrow {
+  display: block;
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.35em;
+}
+.pf-head h4 { font-size: 1.55em; letter-spacing: -0.025em; font-weight: 600; }
+.pf-muted { color: var(--text-muted); }
+
+/* ── Small controls ─────────────────────────────────────── */
+.pf-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 2.4em; padding: 0 1em;
+  border-radius: 0.6em;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  font-size: 0.92em;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+.pf-btn.is-primary { background: var(--accent); border-color: var(--amber-500); color: var(--navy-900); font-weight: 600; }
+.pf-btn.is-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 32%, transparent); }
+.pf-btn.is-ghost { background: transparent; }
+.pf-btn.is-block { display: flex; width: 100%; height: 2.9em; }
+
+.pf-pill {
+  display: inline-flex; align-items: center; gap: 0.4em;
+  height: 1.9em; padding: 0 0.6em;
+  border-radius: 0.45em;
+  border: 1px solid var(--border);
+  background: var(--surface-3);
+  font-size: 0.82em;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.pf-pill.is-live {
+  background: var(--danger-soft); color: var(--danger); font-weight: 600;
+  border-color: color-mix(in srgb, var(--danger) 26%, transparent);
+}
+.pf-pill.is-live i {
+  width: 0.45em; height: 0.45em;
+  border-radius: 50%;
+  background: currentColor;
+  animation: live-pulse 2.4s var(--ease-in-out) infinite;
+}
+.pf-pill.is-open { background: var(--danger-soft); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 26%, transparent); }
+.pf-pill.is-closed { background: var(--surface-3); color: var(--text-muted); }
+.pf-pill.is-pending { background: var(--info-soft); color: var(--info); border-color: color-mix(in srgb, var(--info) 22%, transparent); }
+.pf-pill.is-warn { background: var(--warning-soft); color: var(--warning); border-color: color-mix(in srgb, var(--warning) 22%, transparent); }
+.pf-pill.is-ok { background: var(--success-soft); color: var(--success); border-color: color-mix(in srgb, var(--success) 22%, transparent); }
+.pf-pill.is-info { background: var(--info-soft); color: var(--info); border-color: color-mix(in srgb, var(--info) 22%, transparent); }
+.pf-pill.is-accent { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent-border); }
+
+/* ── Banner ─────────────────────────────────────────────── */
+.pf-banner {
+  display: flex; align-items: center; gap: 0.8em;
+  padding: 0.85em 1em;
+  border-radius: 0.7em;
+  background: var(--warning-soft);
+  border: 1px solid color-mix(in srgb, var(--warning) 26%, transparent);
+  color: var(--warning);
+  font-size: 0.92em;
+}
+.pf-banner > i {
+  flex: none;
+  width: 0.9em; height: 0.9em;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+.pf-banner span { flex: 1; color: var(--text-secondary); }
+.pf-banner strong { display: block; color: var(--warning); }
+
+/* ── Stat grid — hairline-divided, exactly like the app ──── */
+.pf-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--border);
+  border-radius: 0.85em;
+  background: var(--surface);
+  overflow: hidden;
+}
+.pf-stats > div {
+  padding: 1em 1.1em;
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 0.3em;
+}
+.pf-stats > div:last-child { border-right: 0; }
+.pf-stats span { font-size: 0.85em; color: var(--text-secondary); font-weight: 500; }
+.pf-stats b {
+  font-size: 1.7em; font-weight: 600; letter-spacing: -0.03em;
+  line-height: 1.1; font-variant-numeric: tabular-nums;
+}
+.pf-stats em { font-style: normal; font-size: 0.78em; color: var(--text-muted); }
+
+/* ── Card ───────────────────────────────────────────────── */
+.pf-card {
+  border: 1px solid var(--border);
+  border-radius: 0.85em;
+  background: var(--surface);
+  overflow: hidden;
+}
+.pf-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.9em 1.1em;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.95em;
+  font-weight: 600;
+}
+.pf-split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 1em; }
+
+/* ── Room code banner ───────────────────────────────────── */
+.pf-room {
+  display: flex; align-items: center; gap: 2.4em;
+  flex-wrap: wrap;
+  padding: 1.05em 1.3em;
+  border-radius: 0.95em;
+  background: var(--navy-900);
+  border: 1px solid var(--navy-800);
+}
+.pf-room-label {
+  display: block;
+  font-size: 0.7em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(180 198 222 / 0.7);
+  margin-bottom: 0.6em;
+}
+.pf-code { display: flex; gap: 0.4em; }
+.pf-code span {
+  display: grid; place-items: center;
+  width: 2.1em; height: 2.6em;
+  border-radius: 0.4em;
+  background: rgb(255 255 255 / 0.06);
+  border: 1px solid rgb(255 255 255 / 0.16);
+  font-family: var(--font-mono);
+  font-size: 1.35em;
+  font-weight: 600;
+  color: #fff;
+}
+.pf-room-stats { display: flex; gap: 2em; margin: 0; }
+.pf-room-stats dt { font-size: 0.78em; color: rgb(180 198 222 / 0.7); }
+.pf-room-stats dd {
+  margin: 0.25em 0 0;
+  font-size: 1.5em; font-weight: 600; color: #fff; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Question queue ─────────────────────────────────────── */
+.pf-queue { display: flex; flex-direction: column; }
+.pf-queue li {
+  display: flex; align-items: flex-start; gap: 0.9em;
+  padding: 0.85em 1.1em;
+  border-bottom: 1px solid var(--border);
+}
+.pf-queue li:last-child { border-bottom: 0; }
+.pf-queue li.is-open { background: var(--accent-soft); }
+.pf-order {
+  display: grid; place-items: center;
+  flex: none;
+  width: 1.9em; height: 1.9em;
+  border-radius: 0.4em;
+  background: var(--surface-3);
+  font-size: 0.85em; font-weight: 600;
+  color: var(--text-secondary);
+}
+.pf-queue li.is-open .pf-order { background: var(--accent); color: var(--navy-900); }
+.pf-queue-text { flex: 1; min-width: 0; font-size: 0.95em; }
+.pf-queue-text em {
+  display: block;
+  font-style: normal;
+  margin-top: 0.25em;
+  font-size: 0.82em;
+  color: var(--text-muted);
+}
+
+/* ── Meters ─────────────────────────────────────────────── */
+.pf-meters { padding: 1.1em; display: flex; flex-direction: column; gap: 0.9em; }
+.pf-meter-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.45em; font-size: 0.9em; }
+.pf-meter-head span:first-child { font-weight: 500; }
+.pf-meter-head em { font-style: normal; font-weight: 400; color: var(--text-muted); margin-left: 0.6em; }
+.pf-track { display: block; height: 0.45em; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.pf-track-thin { height: 0.3em; margin-bottom: 1em; }
+.pf-track i { display: block; height: 100%; border-radius: inherit; background: var(--navy-500); }
+.pf-track i.is-good { background: var(--success); }
+.pf-track i.is-warn { background: var(--warning); }
+.pf-track i.is-bad { background: var(--danger); }
+.pf-track i.is-accent { background: var(--accent); }
+
+/* ── Live question ──────────────────────────────────────── */
+.pf-timer { font-variant-numeric: tabular-nums; color: var(--text-secondary); font-weight: 600; }
+.pf-qbody { padding: 1.1em; }
+.pf-question { font-size: 1.15em; font-weight: 500; color: var(--text); margin: 0 0 0.9em; line-height: 1.4; }
+.pf-options { display: flex; flex-direction: column; gap: 0.5em; margin-bottom: 1em; }
+.pf-options li {
+  display: flex; align-items: center; gap: 0.7em;
+  padding: 0.75em 0.9em;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6em;
+  font-size: 0.95em;
+}
+.pf-options.is-compact li { padding: 0.5em 0.7em; font-size: 0.88em; }
+.pf-options li.is-selected {
+  border-color: var(--amber-500);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--amber-500);
+}
+.pf-options li.is-correct {
+  border-color: color-mix(in srgb, var(--success) 34%, transparent);
+  background: var(--success-soft);
+}
+.pf-options li.is-correct em {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--success);
+}
+.pf-key {
+  display: grid; place-items: center;
+  flex: none;
+  width: 1.8em; height: 1.8em;
+  border-radius: 0.4em;
+  background: var(--surface-3);
+  font-size: 0.85em; font-weight: 700;
+  color: var(--text-secondary);
+}
+.pf-options li.is-selected .pf-key { background: var(--accent); color: var(--navy-900); }
+.pf-options li.is-correct .pf-key { background: var(--success); color: #fff; }
+
+/* ── Chart ──────────────────────────────────────────────── */
+.pf-chart { padding: 1.1em; }
+.pf-chart svg { width: 100%; height: 6.5em; overflow: visible; }
+.pf-line { fill: none; stroke: var(--navy-600); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+:root[data-theme='dark'] .pf-line { stroke: var(--navy-300); }
+.pf-grid { stroke: var(--border); stroke-width: 1; }
+.pf-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5; }
+
+/* ── Table ──────────────────────────────────────────────── */
+.pf-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1em;
+  padding: 0.8em 1.1em;
+  border-bottom: 1px solid var(--border);
+}
+.pf-search {
+  flex: 1;
+  max-width: 18em;
+  padding: 0.5em 0.8em;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55em;
+  font-size: 0.9em;
+  color: var(--text-muted);
+  background: var(--surface);
+}
+.pf-seg {
+  display: inline-flex; gap: 0.15em;
+  padding: 0.2em;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: 0.6em;
+}
+.pf-seg i {
+  font-style: normal;
+  padding: 0.35em 0.7em;
+  border-radius: 0.4em;
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+.pf-seg i.is-on { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow-xs); }
+
+.pf-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.92em; }
+.pf-table th {
+  padding: 0.7em 1.1em;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-size: 0.8em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.pf-table td {
+  padding: 0.75em 1.1em;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+.pf-table tbody tr:last-child td { border-bottom: 0; }
+.pf-person { display: flex; align-items: center; gap: 0.7em; }
+.pf-person > span:last-child { color: var(--text); font-weight: 500; }
+.pf-person em {
+  display: block;
+  font-style: normal; font-weight: 400;
+  font-size: 0.85em; color: var(--text-muted);
+}
+.pf-av {
+  display: grid; place-items: center;
+  flex: none;
+  width: 2em; height: 2em;
+  border-radius: 50%;
+  background: var(--foundation-soft);
+  border: 1px solid var(--foundation-border);
+  color: var(--navy-700);
+  font-size: 0.8em; font-weight: 600;
+}
+:root[data-theme='dark'] .pf-av { color: var(--navy-200); }
+
+/* ── Draft review ───────────────────────────────────────── */
+.pf-draft { padding: 1em 1.1em; border-bottom: 1px solid var(--border); }
+.pf-draft:last-child { border-bottom: 0; }
+.pf-draft.is-dim { opacity: 0.5; }
+.pf-draft-head {
+  display: flex; align-items: flex-start; gap: 0.8em;
+  margin-bottom: 0.8em;
+  font-size: 0.98em;
+  font-weight: 500;
+  color: var(--text);
+}
+
+/* ============================================================
+   PHONE
+   A device frame at the same fidelity as the desktop frames.
+   ============================================================ */
+.phone {
+  width: 100%;
+  padding: 8px;
+  border-radius: 30px;
+  background: var(--navy-950);
+  border: 1px solid var(--navy-700);
+  box-shadow:
+    0 2px 4px -2px rgb(7 26 51 / 0.10),
+    0 24px 48px -24px rgb(7 26 51 / 0.28);
+}
+:root[data-theme='dark'] .phone { box-shadow: 0 24px 48px -24px rgb(0 0 0 / 0.7); }
+
+.phone-screen {
+  position: relative;
+  border-radius: 23px;
+  background: var(--surface);
+  padding: 18px 14px 14px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text);
+  overflow: hidden;
+}
+/* The speaker slot, drawn rather than imaged. */
+.phone-screen::before {
+  content: '';
+  position: absolute; top: 7px; left: 50%;
+  transform: translateX(-50%);
+  width: 46px; height: 4px;
+  border-radius: 999px;
+  background: var(--navy-950);
+  opacity: 0.16;
+}
+
+.phone-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.phone-course {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+.phone-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.phone-timer { font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.phone-question {
+  margin: 12px 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text);
+}
+.phone-options { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.phone-options li {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  font-size: 11px;
+  line-height: 1.25;
+}
+.phone-options li.is-selected {
+  border-color: var(--amber-500);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--amber-500);
+}
+.phone-options .pf-key { width: 18px; height: 18px; font-size: 9px; border-radius: 5px; }
+.phone-options li.is-selected .pf-key { background: var(--accent); color: var(--navy-900); }
+.phone-submit {
+  display: block;
+  padding: 9px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--navy-900);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ============================================================
+   NARROW SCREENS
+   A frame is not shrunk to fit — the rail is dropped, the type
+   steps down, and the internal grids recompose, exactly as the
+   real application does at the same widths.
+   ============================================================ */
+@media (max-width: 900px) {
+  .pf { font-size: 10px; }
+  .pf-body { grid-template-columns: minmax(0, 1fr); }
+  .pf-side { display: none; }
+  .pf-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pf-stats > div:nth-child(2n) { border-right: 0; }
+  .pf-stats > div:nth-child(-n + 2) { border-bottom: 1px solid var(--border); }
+  .pf-split { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .pf { font-size: 9px; }
+  .pf-pad { padding: 1.2em; gap: 1em; }
+  .pf-room { gap: 1.4em; padding: 1.1em; }
+  .pf-room-stats { gap: 1.4em; }
+  .pf-code span { width: 1.9em; height: 2.4em; font-size: 1.2em; }
+  .pf-table th:nth-child(4), .pf-table td:nth-child(4) { display: none; }
+}
+
+/* ============================================================
+   FRAGMENTS
+   Pieces of interface shown on their own.
+   ============================================================ */
+.frag { font-size: 11px; line-height: 1.4; color: var(--text); }
+.frag-row {
+  display: flex; align-items: center; gap: 0.8em;
+  padding: 0.7em 0;
+  border-bottom: 1px solid var(--border);
+}
+.frag-row:last-child { border-bottom: 0; }
+.frag-row-main { flex: 1; min-width: 0; font-weight: 500; }
+.frag-row-main em {
+  display: block;
+  font-style: normal; font-weight: 400;
+  font-size: 0.85em; color: var(--text-muted);
+}
+.frag-row-action { gap: 0.5em; padding-top: 0.9em; }
+
+.frag-chart svg { display: block; width: 100%; height: 96px; }
+.frag-bars { display: flex; flex-direction: column; gap: 0.9em; }
+.frag-bars > div { display: grid; grid-template-columns: 132px minmax(0, 1fr); align-items: center; gap: 1em; }
+.frag-bars span:first-child { color: var(--text-secondary); }
+.frag-bars .pf-track { height: 0.55em; }
+.frag-bars .pf-track i { background: var(--navy-500); }
+:root[data-theme='dark'] .frag-bars .pf-track i { background: var(--navy-300); }
+@media (max-width: 560px) {
+  .frag-bars > div { grid-template-columns: minmax(0, 1fr); gap: 0.4em; }
+}

@@ -1,0 +1,1002 @@
+/* ============================================================
+   SessionHub — Dashboard Shell
+   Sidebar + Header + PageShell. Flat surfaces, hairline borders.
+   ============================================================ */
+
+/* ============================================================
+   SHELL
+   ============================================================ */
+.dash {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────── */
+.dash-sidebar {
+  width: 248px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  padding: var(--space-4) var(--space-3);
+  overflow-y: auto;
+}
+
+.dash-sidebar .logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.dash-sidebar .logo:hover { color: var(--text); }
+
+.logo .cap {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+/* Recolor the legacy inline-SVG mark to the brand */
+.logo .cap path:first-child { fill: var(--brand-fill); }
+.logo .cap path:last-child  { fill: var(--surface); }
+
+.dash-role-badge {
+  margin: var(--space-3) var(--space-3) var(--space-5);
+  padding: 3px var(--space-2);
+  display: inline-block;
+  width: fit-content;
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand-ink);
+  background: var(--brand-soft);
+  border: 1px solid rgb(var(--c-brand) / 0.15);
+  border-radius: var(--radius-xs);
+}
+
+/* ── Sidebar nav ─────────────────────────────────────────── */
+.dash-nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.dash-nav li { margin: 0; }
+
+.dash-nav button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-soft);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
+
+.dash-nav button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.dash-nav button.active {
+  background: var(--brand-soft);
+  border-color: rgb(var(--c-brand) / 0.15);
+  color: var(--text);
+  font-weight: var(--fw-semibold);
+  box-shadow: var(--shadow-sm);
+}
+
+.dash-nav button.active::before {
+  content: '';
+  position: absolute;
+  left: -13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 20px;
+  border-radius: 0 var(--radius-full) var(--radius-full) 0;
+  background: var(--brand-fill);
+}
+
+.dash-nav button .icon {
+  width: 18px;
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 1;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.dash-nav button.active .icon { color: var(--brand); }
+
+/* ── Sidebar logout ──────────────────────────────────────── */
+.dash-logout {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.dash-logout button {
+  width: 100%;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-soft);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.dash-logout button:hover {
+  background: var(--danger-soft);
+  border-color: rgb(225 29 72 / 0.22);
+  color: var(--danger);
+}
+
+/* ── Main column ─────────────────────────────────────────── */
+.dash-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header (sticky) ─────────────────────────────────────── */
+.dash-topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 64px;
+  padding: var(--space-3) var(--space-6);
+  background: rgb(var(--c-base) / 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--line);
+}
+
+.dash-topbar h1 {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.dash-topbar p {
+  margin: 2px 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* ── User chip ───────────────────────────────────────────── */
+.dash-user-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-3) 0 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.dash-user-chip .av,
+.av {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--brand-fill);
+  color: var(--brand-fill-ink);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  overflow: hidden;
+}
+
+.dash-user-chip .av img,
+.av img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ── Content (PageShell) ─────────────────────────────────── */
+.dash-content {
+  flex: 1;
+  overflow-y: auto;
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-6);
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ============================================================
+   KPI TILES (legacy .kpi markup)
+   Colour variants are neutralised — dot carries the accent.
+   ============================================================ */
+.kpi {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4);
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.kpi b,
+.kpi strong,
+.kpi .kpi-value {
+  font-size: var(--text-2xl);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+.kpi span,
+.kpi .sub {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.kpi::before {
+  content: '';
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.kpi-blue::before   { background: var(--info); }
+.kpi-green::before  { background: var(--success); }
+.kpi-red::before    { background: var(--danger); }
+.kpi-yellow::before { background: var(--warning); }
+
+.kpi-delta {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--success);
+  font-variant-numeric: tabular-nums;
+}
+.kpi-delta.down { color: var(--danger); }
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: var(--space-6);
+}
+
+/* ============================================================
+   QUIZ MONITOR
+   ============================================================ */
+.qm-section {
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line);
+}
+
+.qm-section h4 {
+  margin: 0 0 var(--space-3);
+  font-size: 13.5px;
+  font-weight: var(--fw-semibold);
+  color: var(--text);
+}
+
+.qm-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.qm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.qm-table th {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.qm-table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  color: var(--text-soft);
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.qm-table tr:last-child td { border-bottom: none; }
+.qm-table tbody tr:hover { background: var(--surface-2); }
+
+/* ============================================================
+   LIVE CLASS (Jitsi embed)
+   ============================================================ */
+.lc-container {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  margin-bottom: var(--space-6);
+}
+
+.lc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.lc-header-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13.5px;
+  font-weight: var(--fw-semibold);
+  color: var(--text);
+}
+
+.lc-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: pulse-dot 1.8s ease-in-out infinite;
+}
+
+.lc-iframe {
+  width: 100%;
+  height: 520px;
+  border: none;
+  display: block;
+  background: var(--surface-2);
+}
+
+/* ============================================================
+   ANALYTICS SNAPSHOT
+   ============================================================ */
+.an-snap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+}
+
+.an-snap-item {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+
+.an-snap-label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.an-snap-val {
+  font-size: var(--text-xl);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+/* ============================================================
+   TAB ROW (inner tabs)
+   ============================================================ */
+.tab-row {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: var(--space-5);
+}
+
+.tab-btn {
+  height: 36px;
+  padding: 0 var(--space-3);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.tab-btn:hover { color: var(--text); }
+
+.tab-btn.active {
+  color: var(--text);
+  font-weight: var(--fw-semibold);
+  border-bottom-color: var(--brand-fill);
+}
+
+/* ============================================================
+   PROFILE PANEL
+   ============================================================ */
+.prof-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  margin-bottom: var(--space-6);
+}
+
+.prof-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.prof-av-wrap { position: relative; flex-shrink: 0; }
+
+.profile-av-lg {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--brand-fill);
+  color: var(--brand-fill-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xl);
+  font-weight: var(--fw-bold);
+  overflow: hidden;
+  border: 2px solid var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-av-lg img { width: 100%; height: 100%; object-fit: cover; }
+
+.prof-av-edit {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  background: var(--brand-fill);
+  color: var(--brand-fill-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.prof-hd-name {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.prof-hd-email {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.prof-section-lbl {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: var(--space-4) var(--space-5) var(--space-2);
+}
+
+.prof-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-sm);
+}
+
+.prof-row:last-child { border-bottom: none; }
+
+.prof-lbl {
+  width: 150px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-weight: var(--fw-medium);
+}
+
+.prof-val-text {
+  flex: 1;
+  text-align: right;
+  color: var(--text);
+}
+
+.prof-val-input {
+  flex: 1;
+  height: 32px;
+  text-align: right;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-2);
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.prof-val-input:hover:not(:disabled) {
+  border-color: var(--line);
+  background: var(--surface-2);
+}
+
+.prof-val-input:focus {
+  border-color: rgb(var(--c-brand) / 0.4);
+  background: var(--surface);
+  text-align: right;
+}
+
+.prof-locked {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  padding: 2px var(--space-2);
+}
+
+.prof-divider {
+  height: 1px;
+  background: var(--line);
+  margin: var(--space-2) 0;
+}
+
+.prof-pwd-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.prof-pwd-eye {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.prof-pwd-eye:hover { color: var(--brand); }
+.prof-pwd-eye svg { width: 16px; height: 16px; pointer-events: none; }
+
+.prof-pwd-hint {
+  width: 100%;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  padding: 4px 0 var(--space-2);
+}
+
+/* ============================================================
+   PASSWORD FIELD + EYE
+   ============================================================ */
+.pw-wrap { position: relative; }
+
+.pw-eye {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.pw-eye:hover { color: var(--text); }
+.pw-eye svg { width: 16px; height: 16px; }
+
+.field-hint {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+/* ============================================================
+   ROLE SELECT (signup)
+   ============================================================ */
+.role-select {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.role-pill {
+  flex: 1;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.role-pill:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.role-pill.active {
+  background: var(--brand-soft);
+  border-color: rgb(var(--c-brand) / 0.35);
+  color: var(--brand-ink);
+  font-weight: var(--fw-semibold);
+}
+
+/* ============================================================
+   PAPER GENERATOR
+   ============================================================ */
+.pg-textarea {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: var(--lh-body);
+  resize: vertical;
+}
+
+.pg-clo-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--space-4) 0;
+  font-size: var(--text-sm);
+}
+
+.pg-clo-table td {
+  border: 1px solid var(--line);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  vertical-align: top;
+  color: var(--text-soft);
+}
+
+/* ============================================================
+   CHARTS
+   ============================================================ */
+canvas { max-height: 300px; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1024px) {
+  .dash-sidebar { width: 212px; }
+  .dash-content { padding: var(--space-5); }
+}
+
+@media (max-width: 860px) {
+  .dash { flex-direction: column; height: auto; min-height: 100vh; overflow: visible; }
+
+  .dash-sidebar {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-3);
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    padding: var(--space-2) var(--space-3);
+    overflow-x: auto;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+
+  .dash-role-badge { display: none; }
+
+  .dash-nav {
+    flex-direction: row;
+    flex: 1;
+    gap: var(--space-1);
+  }
+
+  .dash-nav button {
+    width: auto;
+    white-space: nowrap;
+    padding: 0 var(--space-3);
+  }
+
+  .dash-nav button.active::before { display: none; }
+
+  .dash-logout {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    flex-shrink: 0;
+  }
+
+  .dash-logout button { width: auto; padding: 0 var(--space-3); }
+
+  .dash-main { overflow: visible; }
+
+  .dash-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .dash-content { padding: var(--space-4); overflow: visible; }
+
+  .lc-iframe { height: 320px; }
+}
+
+@media (max-width: 560px) {
+  .dash-topbar { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+  .dash-topbar h1 { font-size: var(--text-base); }
+  .card { padding: var(--space-4); border-radius: var(--radius-md); }
+  .prof-row { flex-wrap: wrap; gap: var(--space-2); }
+  .prof-lbl { width: 100%; }
+  .prof-val-text, .prof-val-input { text-align: left; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ============================================================
+   STRUCTURAL PASS
+   Turns every .card into "bordered header strip + body" and lets
+   tables run edge-to-edge, without changing any markup.
+   ============================================================ */
+
+.card {
+  padding: var(--space-5);
+  overflow: hidden;   /* clips edge-to-edge children to the radius */
+}
+
+/* Header strip: pull out to the card edges, add a rule beneath */
+.card > .card-row:first-child {
+  margin: calc(var(--space-5) * -1) calc(var(--space-5) * -1) var(--space-5);
+  padding: 13px var(--space-5);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  min-height: 48px;
+}
+
+/* A card whose only child is the header shouldn't keep the bottom gap */
+.card > .card-row:first-child:last-child {
+  margin-bottom: calc(var(--space-5) * -1);
+  border-bottom: none;
+}
+
+/* Tables run to the card edges and sit flush with the bottom */
+.card > table,
+.card > .table-wrap,
+.card > .qm-table-wrap {
+  width: calc(100% + var(--space-5) * 2);
+  margin: 0 calc(var(--space-5) * -1) calc(var(--space-5) * -1);
+  border: none;
+  border-radius: 0;
+}
+
+.card > table thead th,
+.card > .table-wrap thead th {
+  background: var(--surface-2);
+}
+
+.card > table th:first-child,
+.card > table td:first-child,
+.card > .table-wrap th:first-child,
+.card > .table-wrap td:first-child { padding-left: var(--space-5); }
+
+.card > table th:last-child,
+.card > table td:last-child,
+.card > .table-wrap th:last-child,
+.card > .table-wrap td:last-child { padding-right: var(--space-5); }
+
+.card > table tbody tr:last-child td { border-bottom: none; }
+
+/* Forms sit on a consistent grid */
+.card form.grid-2,
+.card .grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+  align-items: end;
+}
+
+.field { margin-bottom: 0; }
+
+/* Section rhythm inside a panel */
+.tab-panel > .card + .card { margin-top: var(--space-5); }
+.tab-panel > h3,
+.tab-panel > h4 {
+  margin: var(--space-7) 0 var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.tab-panel > *:first-child { margin-top: 0; }
+
+/* KPI row sits above content with its own rhythm */
+.grid-4 { margin-bottom: var(--space-5); }
+
+/* Empty state inside a table spans properly */
+.card > table td.empty-state,
+.card > .table-wrap td.empty-state {
+  padding: var(--space-8) var(--space-5);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Quiz monitor inherits the flush treatment */
+.qm-section { margin-top: 0; padding-top: var(--space-5); }
+.qm-table-wrap { border-radius: var(--radius-sm); }
+
+/* ============================================================
+   AUDIT FIXES
+   ============================================================ */
+
+/* --- Scroll container -------------------------------------------------
+   Only teacher.html has a .dash-content wrapper; student.html and
+   admin.html put .tab-panel straight inside .dash-main. With
+   .dash-main{overflow:hidden} those two pages could not scroll and had
+   no page gutter. .dash-main is now the single scroller everywhere. */
+.dash-main { overflow-y: auto; overflow-x: hidden; }
+
+.dash-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.dash-content {
+  overflow: visible;
+  flex: none;
+}
+
+/* Panels that sit directly in .dash-main get the same gutter */
+.dash-main > .tab-panel {
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-6);
+}
+
+/* --- Focus -----------------------------------------------------------
+   .card uses overflow:hidden to clip flush tables to the 18px radius,
+   which would also clip an outline drawn outside a control. Controls
+   therefore carry an inset ring instead of an outline. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.prof-val-input:focus-visible {
+  outline: none;
+  border-color: var(--brand-fill);
+  box-shadow: 0 0 0 3px rgb(var(--c-brand) / 0.28);
+}
+
+.dash-nav button:focus-visible,
+.dash-logout button:focus-visible,
+.tab-btn:focus-visible {
+  outline: 2px solid var(--brand-fill);
+  outline-offset: -2px;
+}
+
+/* --- Empty states ---------------------------------------------------- */
+.card > table td.empty-state,
+.card > .table-wrap td.empty-state,
+td.empty-state {
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/* --- Table action buttons stay on one line and align right ----------- */
+td .btn-sm { vertical-align: middle; }
+td:last-child .btn-sm + .btn-sm { margin-left: var(--space-2); }
+
+/* --- Mobile sidebar: give the nav room ------------------------------- */
+@media (max-width: 860px) {
+  .dash-sidebar .logo {
+    font-size: 0;              /* hide the wordmark, keep the mark */
+    gap: 0;
+    padding: var(--space-2);
+  }
+  .dash-sidebar .logo .cap { width: 24px; height: 24px; }
+  .dash-nav button { font-size: var(--text-sm); gap: var(--space-2); }
+  .dash-nav button .icon { display: none; }
+  .dash-main > .tab-panel { padding: var(--space-4); }
+}

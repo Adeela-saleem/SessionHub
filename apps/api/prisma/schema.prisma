@@ -1,0 +1,298 @@
+// ============================================================
+//  SessionHub — data model
+//  Design notes:
+//   • The answer key lives in QuestionKey, a separate table that
+//     is never selected by student-facing queries. Firestore could
+//     not do field-level reads; Postgres can, and this makes the
+//     boundary explicit rather than conventional.
+//   • Answer has a unique (questionId, studentId) so a double
+//     submit is rejected by the database, not by client state.
+//   • Every child row cascades from its parent — the old model
+//     orphaned quizzes/attendance when a session was deleted.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SessionStatus {
+  SCHEDULED
+  LIVE
+  CLOSED
+}
+
+enum QuestionType {
+  MCQ
+  SHORT
+}
+
+enum QuestionState {
+  PENDING
+  OPEN
+  CLOSED
+}
+
+// ────────────────────────────────────────────────────────────
+model User {
+  id             String         @id @default(uuid())
+  email          String         @unique
+  passwordHash   String
+  name           String
+  role           Role           @default(STUDENT)
+  approvalStatus ApprovalStatus @default(APPROVED)
+  department     String?
+  year           Int?
+  avatarUrl      String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  taughtCourses  Course[]         @relation("CourseTeacher")
+  enrollments    Enrollment[]
+  sessions       ClassSession[]   @relation("SessionTeacher")
+  answers        Answer[]
+  attendance     Attendance[]
+  questionsAsked Question2[]
+  pollVotes      PollVote[]
+  refreshTokens  RefreshToken[]
+  papers         PaperFormat[]
+
+  @@index([role, approvalStatus])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ────────────────────────────────────────────────────────────
+model Course {
+  id         String   @id @default(uuid())
+  code       String   @unique
+  name       String
+  department String?
+  teacherId  String?
+  teacher    User?    @relation("CourseTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  enrollments Enrollment[]
+  sessions    ClassSession[]
+  schedule    ScheduleSlot[]
+
+  @@index([teacherId])
+  @@map("courses")
+}
+
+model Enrollment {
+  id        String   @id @default(uuid())
+  courseId  String
+  studentId String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([courseId, studentId])
+  @@index([studentId])
+  @@map("enrollments")
+}
+
+model ScheduleSlot {
+  id        String   @id @default(uuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  dayOfWeek Int      // 0 = Sunday
+  startTime String   // "09:00"
+  endTime   String   // "10:30"
+  room      String?
+
+  @@index([courseId])
+  @@map("schedule_slots")
+}
+
+// ────────────────────────────────────────────────────────────
+model ClassSession {
+  id        String        @id @default(uuid())
+  roomCode  String        @unique          // 6 chars, collision-checked on create
+  title     String?
+  courseId  String
+  course    Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacherId String
+  teacher   User          @relation("SessionTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  status    SessionStatus @default(SCHEDULED)
+  startedAt DateTime?
+  endedAt   DateTime?
+  // Heartbeat: a session whose teacher has gone silent is auto-closed.
+  lastTeacherPingAt DateTime?
+  createdAt DateTime      @default(now())
+
+  questions  Question[]
+  attendance Attendance[]
+  polls      Poll[]
+  qaThread   Question2[]
+
+  @@index([courseId])
+  @@index([teacherId])
+  @@index([status])
+  @@map("class_sessions")
+}
+
+model Attendance {
+  id        String    @id @default(uuid())
+  sessionId String
+  studentId String
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student   User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+  // Cumulative seconds present across reconnects — a refresh resumes
+  // the open row instead of creating a duplicate.
+  secondsPresent Int   @default(0)
+
+  @@unique([sessionId, studentId])
+  @@index([sessionId])
+  @@map("attendance")
+}
+
+// ────────────────────────────────────────────────────────────
+model Question {
+  id        String        @id @default(uuid())
+  sessionId String
+  session   ClassSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  order     Int
+  prompt    String
+  type      QuestionType  @default(MCQ)
+  options   String[]      // empty for SHORT
+  marks     Int           @default(1)
+  state     QuestionState @default(PENDING)
+  // Server-authoritative timing. The browser countdown is decoration.
+  durationSeconds Int?
+  openedAt  DateTime?
+  closesAt  DateTime?
+  closedAt  DateTime?
+  createdAt DateTime      @default(now())
+
+  key     QuestionKey?
+  answers Answer[]
+
+  @@unique([sessionId, order])
+  @@index([sessionId, state])
+  @@map("questions")
+}
+
+/// Never selected by any student-facing query. Separated from Question
+/// so exposing the key requires an explicit join, not just forgetting
+/// to strip a field.
+model QuestionKey {
+  questionId   String   @id
+  question     Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  correctIndex Int?     // null for SHORT
+  explanation  String?
+
+  @@map("question_keys")
+}
+
+model Answer {
+  id           String   @id @default(uuid())
+  questionId   String
+  studentId    String
+  question     Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  student      User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  answerText   String?
+  answerIndex  Int?
+  isCorrect    Boolean?
+  marksAwarded Int      @default(0)
+  answeredAt   DateTime @default(now())
+
+  /// The database rejects a second submission. No client state involved.
+  @@unique([questionId, studentId])
+  @@index([questionId])
+  @@index([studentId])
+  @@map("answers")
+}
+
+// ────────────────────────────────────────────────────────────
+model Poll {
+  id        String   @id @default(uuid())
+  sessionId String
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  prompt    String
+  options   String[]
+  isOpen    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  votes PollVote[]
+
+  @@index([sessionId])
+  @@map("polls")
+}
+
+/// One row per vote — replaces the client-side counter increment,
+/// which students could write to directly.
+model PollVote {
+  id          String @id @default(uuid())
+  pollId      String
+  studentId   String
+  poll        Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  student     User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  optionIndex Int
+  createdAt   DateTime @default(now())
+
+  @@unique([pollId, studentId])
+  @@index([pollId])
+  @@map("poll_votes")
+}
+
+// Live Q&A. Named Question2 to avoid colliding with quiz Question.
+model Question2 {
+  id         String   @id @default(uuid())
+  sessionId  String
+  studentId  String
+  session    ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student    User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  body       String
+  answerText String?
+  answeredAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([sessionId])
+  @@map("qa_messages")
+}
+
+// ────────────────────────────────────────────────────────────
+model PaperFormat {
+  id        String   @id @default(uuid())
+  teacherId String
+  teacher   User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  title     String
+  payload   Json
+  createdAt DateTime @default(now())
+
+  @@index([teacherId])
+  @@map("paper_formats")
+}

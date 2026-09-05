@@ -1,0 +1,211 @@
+// ============================================================
+// SessionHub — Firestore Security Rules (UPDATED)
+// ============================================================
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function role() {
+      return isSignedIn() ? userDoc().role : null;
+    }
+    function isAdmin() {
+      return isSignedIn() && role() == 'admin';
+    }
+    function isApprovedTeacher() {
+      return isSignedIn() && role() == 'teacher' && userDoc().approval_status == 'approved';
+    }
+    function isStudent() {
+      return isSignedIn() && role() == 'student';
+    }
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // ---------- users ----------
+    // Approved teachers can query users to find/enroll students via email
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin() || isApprovedTeacher();
+
+      allow create: if isOwner(uid)
+        && request.resource.data.role in ['student', 'teacher']
+        && (request.resource.data.role == 'student'
+            ? request.resource.data.approval_status == 'approved'
+            : request.resource.data.approval_status == 'pending');
+
+      allow update: if isAdmin()
+        || (isOwner(uid)
+            && request.resource.data.role == resource.data.role
+            && request.resource.data.approval_status == resource.data.approval_status);
+
+      allow delete: if isAdmin();
+    }
+
+    // ---------- courses ----------
+    match /courses/{courseId} {
+      allow read, list: if isSignedIn();
+      allow create: if isAdmin();
+      allow update: if isAdmin()
+        || (isApprovedTeacher() && resource.data.teacherId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    // ---------- sessions ----------
+    // Teachers own their sessions (full create + update).
+    // Students can read any session (needed to join by code/roomCode)
+    // and may update ONLY the activeStudents field — this powers the
+    // live student counter on the teacher dashboard without granting
+    // broader write access to session metadata.
+    match /sessions/{sessionId} {
+      allow read: if isSignedIn();
+
+      allow create: if isApprovedTeacher()
+        && request.resource.data.teacherId == request.auth.uid;
+
+      allow update: if isAdmin()
+        || (isApprovedTeacher() && resource.data.teacherId == request.auth.uid)
+        // Students may ONLY touch activeStudents[] — nothing else
+        || (isStudent()
+            && request.resource.data.diff(resource.data)
+                 .affectedKeys()
+                 .hasOnly(['activeStudents']));
+
+      allow delete: if isAdmin();
+
+      // ── /sessions/{sessionId}/qa sub-collection ──────────────
+      // Students create their own questions.
+      // Everyone in a session can read all Q&A (so answers are
+      // visible to all students watching the board).
+      // Only approved teachers can update (write answerText).
+      match /qa/{qaId} {
+        allow read:   if isSignedIn();
+        allow create: if isStudent()
+          && request.resource.data.studentId == request.auth.uid
+          && request.resource.data.questionText is string
+          && request.resource.data.questionText.size() > 0;
+        allow update: if isApprovedTeacher() || isAdmin();
+        allow delete: if isAdmin();
+      }
+    }
+
+    // ---------- quizzes (broadcast questions) — DEPRECATED, kept for migration only ----------
+    match /quizzes/{quizId} {
+      allow read: if isSignedIn();
+      allow create: if isApprovedTeacher();
+      allow update, delete: if isAdmin()
+        || (isApprovedTeacher() && resource.data.teacherId == request.auth.uid);
+    }
+
+    // ---------- sessions/{sid}/questions (public question metadata) ----------
+    // Students and teachers can read questions. The answer key is restricted to private/key subcollection.
+    match /sessions/{sid}/questions/{qid} {
+      allow read: if isSignedIn();
+      allow create, update: if isApprovedTeacher() || isAdmin();
+      allow delete: if isAdmin();
+
+      // Private answer key — teachers and admins only
+      match /private/{doc} {
+        allow read, write: if isApprovedTeacher() || isAdmin();
+      }
+    }
+
+    // ---------- sessions/{sid}/answers (student submissions, one per student per question) ----------
+    // Document ID must be "{questionId}_{studentId}" to ensure idempotency.
+    match /sessions/{sid}/answers/{aid} {
+      allow read: if isAdmin() || isApprovedTeacher()
+        || (isStudent() && resource.data.studentId == request.auth.uid);
+      allow create: if isStudent()
+        && request.resource.data.studentId == request.auth.uid;
+      allow update, delete: if false;  // immutable after creation
+    }
+
+    // ---------- sessions/{sid}/polls/{pid}/votes (one vote per student per poll) ----------
+    // Replaces client-side vote increment. One document per vote.
+    match /sessions/{sid}/polls/{pid}/votes/{vid} {
+      allow read: if isSignedIn();
+      allow create: if isStudent()
+        && request.resource.data.studentId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ---------- quizAnswers (student submissions) ----------
+    match /quizAnswers/{answerId} {
+      allow read: if isAdmin() || isApprovedTeacher()
+        || (isStudent() && resource.data.studentId == request.auth.uid);
+      allow create: if isStudent()
+        && request.resource.data.studentId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- polls ----------
+    match /polls/{pollId} {
+      allow read: if isSignedIn();
+      allow create: if isApprovedTeacher();
+      allow update: if isAdmin()
+        || (isApprovedTeacher() && resource.data.teacherId == request.auth.uid)
+        || (isStudent()
+            && request.resource.data.diff(resource.data)
+                 .affectedKeys()
+                 .hasOnly(['options']));
+      allow delete: if isAdmin()
+        || (isApprovedTeacher() && resource.data.teacherId == request.auth.uid);
+    }
+
+    // ---------- qa (live Q&A) ----------
+    match /qa/{qaId} {
+      allow read: if isSignedIn();
+      allow create: if isStudent()
+        && request.resource.data.studentId == request.auth.uid;
+      allow update: if isAdmin() || isApprovedTeacher();
+      allow delete: if isAdmin();
+    }
+
+    // ---------- attendance ----------
+    match /attendance/{attendanceId} {
+      allow read: if isSignedIn();
+      allow create: if isStudent()
+        && request.resource.data.studentId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- paperFormats (AI paper formatter audit trail) ----------
+    match /paperFormats/{docId} {
+      allow read: if isAdmin()
+        || (isApprovedTeacher() && resource.data.teacherId == request.auth.uid);
+      allow create: if isApprovedTeacher()
+        && request.resource.data.teacherId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- schedules (weekly timetable) ----------
+    // Teachers create and manage their own schedule slots.
+    // All signed-in users can read so students can view their
+    // enrolled courses' timetable. Only the owning teacher or
+    // admin can modify or delete a slot.
+    match /schedules/{scheduleId} {
+      allow read: if isSignedIn();
+
+      allow create: if isApprovedTeacher()
+        && request.resource.data.teacherId == request.auth.uid;
+
+      allow update: if isAdmin()
+        || (isApprovedTeacher() && resource.data.teacherId == request.auth.uid);
+
+      allow delete: if isAdmin()
+        || (isApprovedTeacher() && resource.data.teacherId == request.auth.uid);
+    }
+
+    // ---------- analytics (precomputed aggregates, admin-only) ----------
+    match /analytics/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+  }
+}

@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SessionHub — Real-Time Interactive Classrooms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/primitives.css">
+<link rel="stylesheet" href="styles.css">
+
+<style>
+/* ── Targeted overrides — styles.css is untouched ────────────────────
+   Only new additions required by the content update live here.
+──────────────────────────────────────────────────────────────────── */
+
+/* Subtle ambient blue gradient — barely perceptible corporate finish */
+body {
+  background: transparent;
+}
+
+/* ── Hero — centered single-column layout ───────────────────────── */
+.hero-center-wrap {
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* Pill badge eyebrow */
+.eyebrow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--brand-soft);
+  border: 1px solid rgb(var(--c-brand) / 0.2);
+  border-radius: 999px;
+  padding: 6px 18px;
+  font-family: var(--font-mono);
+  font-size: .78rem;
+  color: var(--blue-700);
+  letter-spacing: .04em;
+  margin-bottom: 22px;
+}
+.eyebrow-pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue-500);
+  flex-shrink: 0;
+}
+
+/* Override hero h1 for centered layout — slightly larger */
+.hero-center-wrap h1 {
+  font-size: clamp(2.6rem, 5vw, 3.8rem);
+  margin-bottom: 18px;
+}
+
+/* Lede: constrain width and center */
+.hero-center-wrap .lede {
+  max-width: 580px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* CTA and meta rows — center them */
+.hero-center-wrap .hero-cta  { justify-content: center; }
+.hero-center-wrap .hero-meta { justify-content: center; margin-top: 44px; }
+
+/* 4-feature grid: 2×2 layout */
+.feature-cols-2x2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+/* Feature icon container */
+.feat-icon {
+  width: 42px;
+  height: 42px;
+  background: var(--blue-100);
+  border-radius: var(--radius-s);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.feat-icon svg { width: 22px; height: 22px; }
+
+/* For Everyone — role cards */
+.role-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.role-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  padding: 30px 26px;
+  box-shadow: var(--shadow-card);
+}
+.role-card-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-m);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.role-card-icon.student-icon { background: var(--brand-soft); }
+.role-card-icon.teacher-icon { background: var(--blue-100); }
+.role-card-icon.admin-icon   { background: var(--surface-2); }
+.role-card h3 { font-size: 1.1rem; margin-bottom: 8px; }
+.role-card > p { font-size: .9rem; margin-bottom: 14px; }
+.role-card ul  { padding-left: 18px; color: var(--ink-soft); font-size: .88rem; }
+.role-card li  { margin-bottom: 7px; }
+
+/* Footer — 3-column override */
+.footer-grid-3 {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1.3fr;
+  gap: 40px;
+  margin-bottom: 40px;
+}
+.footer-grid-3 h5 {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: .92rem;
+  margin-bottom: 14px;
+}
+.footer-grid-3 ul { list-style: none; margin: 0; padding: 0; }
+.footer-grid-3 li { margin-bottom: 10px; }
+.footer-grid-3 a  { color: var(--text-soft); font-size: .88rem; }
+.footer-grid-3 a:hover { color: var(--yellow-400); }
+.footer-grid-3 p  { color: var(--text-muted); font-size: .85rem; margin-top: 14px; max-width: 250px; line-height: 1.55; }
+
+/* Social icons row */
+.social-row { display: flex; gap: 10px; margin-top: 20px; }
+.social-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+}
+.social-btn:hover { background: var(--brand-soft); }
+.social-btn svg { width: 16px; height: 16px; fill: var(--text-soft); }
+
+/* Contact list */
+.contact-list { list-style: none; margin: 0; padding: 0; }
+.contact-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: var(--text-soft);
+  font-size: .88rem;
+  line-height: 1.45;
+}
+.contact-list svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  stroke: var(--yellow-400);
+}
+
+@media (max-width: 920px) {
+  .feature-cols-2x2 { grid-template-columns: 1fr; }
+  .role-cards        { grid-template-columns: 1fr; }
+  .footer-grid-3     { grid-template-columns: 1fr 1fr; }
+  .about-cards       { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .footer-grid-3 { grid-template-columns: 1fr; }
+  .about-cards   { grid-template-columns: 1fr; }
+}
+
+/* ── About section — full-width Option A refactor ─────────────
+   Replaces the old about-grid split layout.
+   Blue box SVG is removed; header text + 4 cards span full width.
+──────────────────────────────────────────────────────────────── */
+.about-header {
+  max-width: 740px;
+  margin: 0 auto 44px;
+  text-align: center;
+}
+.about-header h2 {
+  margin-bottom: 16px;
+}
+.about-header p {
+  font-size: 1rem;
+  color: var(--ink-soft);
+  line-height: 1.65;
+}
+
+/* 4-column card grid */
+.about-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+}
+
+/* Individual card */
+.about-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--blue-700);
+  border-radius: var(--radius-l);
+  padding: 26px 22px 28px;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow .18s, transform .18s;
+}
+.about-card:hover {
+  box-shadow: 0 8px 28px rgb(var(--c-shadow) / 0.22);
+  transform: translateY(-2px);
+}
+/* Accent the first card with yellow top border */
+.about-card:first-child { border-top-color: var(--yellow-400); }
+
+.about-card-icon {
+  width: 38px;
+  height: 38px;
+  background: var(--blue-100);
+  border-radius: var(--radius-s);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.about-card-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.about-card-title {
+  font-family: var(--font-display);
+  font-size: .98rem;
+  font-weight: 700;
+  color: var(--blue-900);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+.about-card-desc {
+  font-size: .86rem;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Password eye toggle ─────────────────────────────────────── */
+.pw-wrap { position:relative; }
+.pw-wrap input { padding-right:42px !important; width:100%; }
+.pw-eye {
+  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  background:none; border:none; cursor:pointer; padding:4px;
+  color:var(--ink-soft); display:flex; align-items:center;
+  transition:color .15s; line-height:1;
+}
+.pw-eye:hover { color:var(--blue-700); }
+.pw-eye:focus { outline:none; }
+.pw-eye svg   { width:18px; height:18px; pointer-events:none; }
+
+/* ── Field-level inline error messages ──────────────────────── */
+.field-error {
+  font-size:.78rem; color:var(--red); margin-top:4px;
+  display:none; padding:0; background:none;
+}
+.field-error.show { display:block; }
+.input-error { border-color:var(--red) !important; }
+
+/* ── Auth modal select — matches input height/appearance exactly ── */
+#authModal select {
+  width:100%; appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238aa0c4' stroke-width='2.5' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 12px center;
+  padding-right:34px !important;
+  cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== HEADER ===================== -->
+<header class="site-header">
+  <div class="wrap">
+    <a href="#home" class="logo">
+      <svg class="cap" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M24 6L4 16L24 26L44 16L24 6Z" fill="#FFC600"/>
+        <path d="M12 21V32C12 32 17 37 24 37C31 37 36 32 36 32V21L24 27L12 21Z" fill="#0A2342"/>
+        <path d="M44 16V28" stroke="#FFC600" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="44" cy="30.5" r="2.2" fill="#FFC600"/>
+      </svg>
+      Session<span class="dot">Hub</span>
+    </a>
+
+    <!-- Nav: Home · Features · For Everyone -->
+    <ul class="nav-links">
+      <li><a href="#home">Home</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#for-everyone">For Everyone</a></li>
+    </ul>
+
+    <!-- Auth buttons unchanged -->
+    <div class="auth-actions">
+      <button class="btn btn-ghost" data-open-auth="login">Log in</button>
+      <button class="btn btn-primary" data-open-auth="signup">Sign up</button>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== HERO — centered, session card removed ===================== -->
+<section class="hero" id="home">
+  <div class="wrap">
+    <div class="hero-center-wrap">
+      <!-- Pill eyebrow badge -->
+      <span class="eyebrow-pill">AI-powered learning — now smarter</span>
+
+      <h1>Learn Smarter,<br>Achieve More.</h1>
+
+      <p class="lede">SessionHub brings world-class courses, smart scheduling, and real-time progress tracking into one powerful platform built for focused learners.</p>
+
+      <div class="hero-cta">
+        <button class="btn btn-primary" data-open-auth="signup">Get Started Free</button>
+        <button class="btn btn-outline" data-open-auth="login">I Have an Account</button>
+      </div>
+
+      <div class="hero-meta">
+        <div><b>1</b><span>Code per session</span></div>
+        <div><b>0s</b><span>Sync delay on answers</span></div>
+        <div><b>3</b><span>Roles, one workspace</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ABOUT — full-width Option A ===================== -->
+<section class="bg-tint" id="about">
+  <div class="wrap">
+
+    <!-- Centered header block: eyebrow + headline + intro paragraph -->
+    <div class="about-header">
+      <span class="eyebrow">Why SessionHub</span>
+      <h2>Built for the gap between a lecture slide and a real conversation.</h2>
+      <p>Most classroom tools are only used for uploading slides and checking grades later. SessionHub is built for the live 50 minutes you spend inside the classroom. We bring instant quiz broadcasting, smart paper formatting, and real-time tracking together so learning never stops.</p>
+    </div>
+
+    <!-- 4-column card grid — full container width -->
+    <div class="about-cards">
+
+      <!-- Card 1: Admin -->
+      <div class="about-card">
+        <div class="about-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-700)" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <h4 class="about-card-title">All-in-One Admin Hub</h4>
+        <p class="about-card-desc">Manage your entire institution, tracks courses, and views full analytics from one single dashboard.</p>
+      </div>
+
+      <!-- Card 2: Teacher -->
+      <div class="about-card">
+        <div class="about-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-700)" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+            <path d="M7 8h10M7 11h6"/>
+          </svg>
+        </div>
+        <h4 class="about-card-title">Smart Teacher Tools</h4>
+        <p class="about-card-desc">Instantly create AI quizzes, formats exam papers in seconds, and automatically tracks student grades.</p>
+      </div>
+
+      <!-- Card 3: Student -->
+      <div class="about-card">
+        <div class="about-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-700)" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c0 1.657 2.686 3 6 3s6-1.343 6-3v-5"/>
+          </svg>
+        </div>
+        <h4 class="about-card-title">One-Code Student Access</h4>
+        <p class="about-card-desc">No complex setups. Students just type a simple room code to join live lectures and sessions instantly.</p>
+      </div>
+
+      <!-- Card 4: Realtime -->
+      <div class="about-card">
+        <div class="about-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-700)" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="13 2 13 9 20 9"/>
+            <path d="M11 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+          </svg>
+        </div>
+        <h4 class="about-card-title">Realtime Sync Core</h4>
+        <p class="about-card-desc">Everything updates live on every screen. Quizzes broadcast and attendance logs the exact second it happens.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FEATURES — 4 product feature cards ===================== -->
+<section id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Capabilities</span>
+      <h2>Powerful tools designed for modern classrooms.</h2>
+    </div>
+
+    <div class="feature-cols-2x2">
+
+      <!-- 1. Online Sessions -->
+      <div class="feature-card">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+          </svg>
+        </div>
+        <h3>Online Sessions</h3>
+        <p style="font-size:.92rem; color:var(--ink-soft); margin-top:6px;">Connect, learn, and grow through live online sessions anytime, anywhere.</p>
+      </div>
+
+      <!-- 2. Live Progress Tracking -->
+      <div class="feature-card">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6"  y1="20" x2="6"  y2="14"/>
+          </svg>
+        </div>
+        <h3>Live Progress Tracking</h3>
+        <p style="font-size:.92rem; color:var(--ink-soft); margin-top:6px;">Real-time dashboards show your learning velocity, completion rates, and grade trends.</p>
+      </div>
+
+      <!-- 3. AI Paper Formatting -->
+      <div class="feature-card">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
+        <h3>AI Paper Formatting</h3>
+        <p style="font-size:.92rem; color:var(--ink-soft); margin-top:6px;">Smart AI feature that formats papers into standard academic structure within seconds.</p>
+      </div>
+
+      <!-- 4. AI Quiz Generator -->
+      <div class="feature-card">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <h3>AI Quiz Generator</h3>
+        <p style="font-size:.92rem; color:var(--ink-soft); margin-top:6px;">Instantly deploy dynamic multiple-choice question arrays for active student engagement sync.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOR EVERYONE — Student / Teacher / Admin ===================== -->
+<section class="bg-tint" id="for-everyone">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">For Everyone</span>
+      <h2>Built for every role.</h2>
+      <p>Whether you are a student, a teacher, or running the whole institution — SessionHub has a dashboard for you.</p>
+    </div>
+
+    <div class="role-cards">
+
+      <!-- Student -->
+      <div class="role-card">
+        <div class="role-card-icon student-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#946200" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c0 1.657 2.686 3 6 3s6-1.343 6-3v-5"/>
+          </svg>
+        </div>
+        <h3>Student</h3>
+        <p>Your personal learning hub. Track progress, submit assignments, and earn certificates.</p>
+        <ul>
+          <li>Progress tracking dashboard</li>
+          <li>Assignment submission system</li>
+          <li>Grade analytics and certificates</li>
+          <li>Course calendar and reminders</li>
+        </ul>
+      </div>
+
+      <!-- Teacher -->
+      <div class="role-card">
+        <div class="role-card-icon teacher-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--blue-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+            <path d="M7 8h10M7 11h6"/>
+          </svg>
+        </div>
+        <h3>Teacher</h3>
+        <p>Manage your classes, track student performance, and publish course content with ease.</p>
+        <ul>
+          <li>Class and student management</li>
+          <li>AI Quiz Generation and Paper Formatting</li>
+          <li>Analytics per student</li>
+          <li>Content publishing tools</li>
+        </ul>
+      </div>
+
+      <!-- Admin -->
+      <div class="role-card">
+        <div class="role-card-icon admin-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--blue-900)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <h3>Admin</h3>
+        <p>Full platform control. Manage users, courses, and institution-wide analytics.</p>
+        <ul>
+          <li>Platform-wide analytics</li>
+          <li>User and role management</li>
+          <li>Course approval workflow</li>
+          <li>System settings and reports</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===================== HOW IT WORKS — unchanged ===================== -->
+<section class="bg-tint">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">How a session runs</span>
+      <h2>From empty room to live answers in under a minute.</h2>
+    </div>
+    <div class="flow">
+      <div class="flow-step"><h4>Create the session</h4><p>A teacher starts a session for a course; SessionHub generates a unique code.</p></div>
+      <div class="flow-step"><h4>Share the code</h4><p>Students enter the code from their dashboard — no app install, no waiting room.</p></div>
+      <div class="flow-step"><h4>Run it live</h4><p>Launch an AI-generated quiz, a poll, or open the floor to Q&amp;A.</p></div>
+      <div class="flow-step"><h4>Read the room</h4><p>Attendance, scores, and engagement update for the teacher in real time.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TESTIMONIALS — unchanged ===================== -->
+<section id="testimonials">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">From the field</span>
+      <h2>What departments are saying.</h2>
+    </div>
+    <div class="testi-grid">
+      <div class="testi-card">
+        <p class="testi-quote">"Attendance used to eat the first five minutes of every lecture. Now it logs itself the moment students join the session code."</p>
+        <div class="testi-person"><div class="testi-avatar">RA</div><div><b>Rabia A.</b><span>Assistant Professor, CS Dept.</span></div></div>
+      </div>
+      <div class="testi-card">
+        <p class="testi-quote">"The AI quiz generator gives me a first draft in seconds — I just edit and broadcast. It's cut my prep time in half."</p>
+        <div class="testi-person"><div class="testi-avatar">MH</div><div><b>Moiz H.</b><span>Lecturer, Mathematics</span></div></div>
+      </div>
+      <div class="testi-card">
+        <p class="testi-quote">"As an admin I finally have one place to see every session and quiz across departments instead of chasing screenshots."</p>
+        <div class="testi-person"><div class="testi-avatar">SK</div><div><b>Sana K.</b><span>Academic Coordinator</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FINAL CTA — unchanged ===================== -->
+<section>
+  <div class="wrap">
+    <div class="cta-band">
+      <h2>Your first live session is two clicks away.</h2>
+      <p>Sign up as a teacher to start a session, or as a student to join one with a code.</p>
+      <button class="btn btn-primary" data-open-auth="signup">Create your account</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOOTER — 3-column ===================== -->
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid-3">
+
+      <!-- Column 1: Branding + tagline + social icons -->
+      <div>
+        <a href="#home" class="logo" style="color:#fff;">
+          <svg class="cap" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M24 6L4 16L24 26L44 16L24 6Z" fill="#FFC600"/>
+            <path d="M12 21V32C12 32 17 37 24 37C31 37 36 32 36 32V21L24 27L12 21Z" fill="#fff"/>
+          </svg>
+          SessionHub
+        </a>
+        <p>Transforming classrooms with real-time interaction and intelligent analytics for better learning outcomes.</p>
+
+        <!-- Social placeholder icons -->
+        <div class="social-row" aria-label="Social media links">
+          <!-- Facebook -->
+          <a href="#" class="social-btn" aria-label="Facebook">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/>
+            </svg>
+          </a>
+          <!-- Twitter / X -->
+          <a href="#" class="social-btn" aria-label="Twitter">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/>
+            </svg>
+          </a>
+          <!-- LinkedIn -->
+          <a href="#" class="social-btn" aria-label="LinkedIn">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/>
+              <circle cx="4" cy="4" r="2"/>
+            </svg>
+          </a>
+          <!-- YouTube -->
+          <a href="#" class="social-btn" aria-label="YouTube">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 001.46 6.42 29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.96A29 29 0 0023 12a29 29 0 00-.46-5.58z"/>
+              <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="var(--blue-900)"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Column 2: Quick Links — mirrors active nav -->
+      <div>
+        <h5>Quick Links</h5>
+        <ul>
+          <li><a href="#home">Home</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#for-everyone">For Everyone</a></li>
+        </ul>
+      </div>
+
+      <!-- Column 3: Contact Us -->
+      <div>
+        <h5>Contact Us</h5>
+        <ul class="contact-list">
+          <li>
+            <!-- Email icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            <a href="mailto:support@sessionhub.edu">support@sessionhub.edu</a>
+          </li>
+          <li>
+            <!-- Phone icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91A16 16 0 0016.09 17.9l1.27-1.26a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+            </svg>
+            <span>+92 300 1234567</span>
+          </li>
+          <li>
+            <!-- Location icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span>University Campus, Education City, Pakistan</span>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="footer-bottom">
+      <span>&copy; 2026 SessionHub. All rights reserved.</span>
+      <span>
+        <a href="#">Privacy Policy</a>
+        &nbsp;&middot;&nbsp;
+        <a href="#">Terms of Service</a>
+        &nbsp;&middot;&nbsp;
+        <a href="#">SDG 4 - Quality Education</a>
+      </span>
+    </div>
+  </div>
+</footer>
+
+<!-- ===================== AUTH MODAL — unchanged ===================== -->
+<div class="modal-overlay" id="authOverlay">
+  <div class="modal">
+    <button class="modal-close" id="authClose" aria-label="Close">×</button>
+
+    <div class="tab-row">
+      <button class="tab-btn" id="tabLogin">Log in</button>
+      <button class="tab-btn" id="tabSignup">Sign up</button>
+    </div>
+
+    <div id="formMsg" class="form-msg"></div>
+
+    <!-- LOGIN FORM -->
+    <form id="loginForm">
+      <h3>Welcome back</h3>
+      <p class="sub">Log in to your SessionHub dashboard.</p>
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" required placeholder="you@institution.edu">
+        <div class="field-error" id="loginEmail-error"></div>
+      </div>
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="loginPassword" required placeholder="••••••••">
+          <button type="button" class="pw-eye" data-target="loginPassword" aria-label="Show password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <div class="field-error" id="loginPassword-error"></div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Log in</button>
+    </form>
+
+    <!-- SIGNUP FORM -->
+    <form id="signupForm" style="display:none;">
+      <h3>Create your account</h3>
+      <p class="sub">Choose your role to get started.</p>
+      <div class="role-select">
+        <div class="role-pill active" data-role="student">I'm a Student</div>
+        <div class="role-pill" data-role="teacher">I'm a Teacher</div>
+      </div>
+      <input type="hidden" id="signupRole" value="student">
+      <div class="field">
+        <label for="signupName">Full name</label>
+        <input type="text" id="signupName" required placeholder="Fatima Ahmed"
+               autocomplete="name">
+        <div class="field-error" id="signupName-error"></div>
+      </div>
+      <div class="field">
+        <label for="signupEmail">Email</label>
+        <input type="email" id="signupEmail" required placeholder="you@institution.edu">
+        <div class="field-error" id="signupEmail-error"></div>
+      </div>
+      <div class="field">
+        <label for="signupDept">Department</label>
+        <select id="signupDept" required>
+          <option value="" disabled selected>Select your department</option>
+          <option value="Computer Science">Computer Science</option>
+          <option value="Software Engineering">Software Engineering</option>
+          <option value="Information Technology">Information Technology</option>
+          <option value="Electrical Engineering">Electrical Engineering</option>
+         
+        </select>
+      </div>
+      <div class="field" id="yearField">
+        <label for="signupYear">Year</label>
+        <select id="signupYear">
+          <option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="signupPassword">Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="signupPassword" required placeholder="At least 8 characters">
+          <button type="button" class="pw-eye" data-target="signupPassword" aria-label="Show password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <div class="field-error" id="signupPassword-error"></div>
+        <div class="field-hint">Min. 8 characters, with an uppercase letter, a number, and a symbol.</div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Create account</button>
+    </form>
+  </div>
+</div>
+
+<script type="module" src="firebase-config.js"></script>
+<script type="module" src="auth.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    // Poll bar animation on hero card
+    document.querySelectorAll('.poll-bar-fill').forEach(el => {
+      const v = el.getAttribute('data-fill');
+      requestAnimationFrame(() => { el.style.width = v + '%'; });
+    });
+  });
+</script>
+<script src="theme-toggle.js"></script>
+</body>
+</html>
