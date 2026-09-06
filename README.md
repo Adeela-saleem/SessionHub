@@ -179,6 +179,66 @@ Boot fails fast if a required variable is missing or a secret is too short.
 
 ---
 
+## Deploy
+
+The web app is a static Vite build and runs on Vercel's free plan. The API
+holds Socket.IO connections open, so it needs a long-running host such as
+Render; Vercel functions cannot serve it. Postgres lives on Supabase.
+
+### 1. Supabase (database)
+
+- Create a project, then copy two connection strings from
+  *Project Settings → Database → Connection string → URI*:
+  the **direct** one (port `5432`) and the **transaction pooler** one (port `6543`).
+- Apply the migrations and seed from your machine with the direct string:
+
+```bash
+cd apps/api
+DATABASE_URL='<direct-uri>' npx prisma migrate deploy
+DATABASE_URL='<direct-uri>' npx prisma db seed
+```
+
+- Change the seeded passwords before sharing the deployment.
+
+### 2. Render (API)
+
+- New → Web Service → this repo. Runtime **Docker**, Dockerfile path
+  `apps/api/Dockerfile`, build context the repository root, instance Free.
+- Environment variables:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | pooler URI (`6543`) with `?pgbouncer=true&connection_limit=5` |
+| `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | `openssl rand -base64 48` each |
+| `JWT_ACCESS_TTL`, `JWT_REFRESH_TTL` | `15m`, `7d` |
+| `GROQ_API_KEY`, `GROQ_MODEL` | your key, `openai/gpt-oss-120b` |
+| `NODE_ENV`, `PORT` | `production`, `4000` |
+| `CORS_ORIGIN` | the Vercel URL, e.g. `https://sessionhub.vercel.app` |
+
+- Health check path `/api/health`. The container runs `prisma migrate deploy`
+  on every start, so later migrations apply themselves.
+- Free instances sleep when idle; the first request after that takes ~30 s.
+  Uploaded assignment files are stored on the instance disk and do not
+  survive a redeploy on the free tier.
+
+### 3. Vercel (web)
+
+- Add New → Project → this repo. Root directory `apps/web`, framework Vite,
+  build `npm run build`, output `dist`. `apps/web/vercel.json` rewrites every
+  path to `index.html` so client-side routes survive a refresh.
+- Environment variable `VITE_API_URL=https://<your-api>.onrender.com`
+  (no trailing slash). It is baked in at build time; redeploy after changing it.
+- After the first deploy, put the Vercel URL into Render's `CORS_ORIGIN`.
+
+### Check
+
+```bash
+curl https://<your-api>.onrender.com/api/health   # {"status":"ok",...}
+```
+
+Log in on the Vercel URL, start a session as the teacher, and join it from
+another browser as a student to confirm the realtime path.
+
 ## Not yet built
 
 Honest list, so nobody discovers these the hard way:
