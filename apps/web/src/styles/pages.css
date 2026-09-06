@@ -379,6 +379,36 @@
 }
 
 /* Student: the question owns a reading-width column. */
+/* Video meeting — the Jitsi iframe sits in a framed panel above the stage. */
+.meeting-panel {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: #0b1220;
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+}
+.meeting-frame { height: clamp(320px, 52dvh, 560px); }
+.meeting-frame iframe { display: block; width: 100%; height: 100%; border: 0; }
+.meeting-overlay {
+  position: absolute; inset: 0; z-index: 1;
+  display: flex; align-items: center; justify-content: center; gap: var(--s-2);
+  padding: var(--s-5); text-align: center;
+  font-size: var(--fs-sm); color: #cbd5e1;
+  pointer-events: none;
+}
+.meeting-overlay.is-error { pointer-events: auto; background: #0b1220; }
+.meeting-overlay a { color: #fff; }
+.meeting-head { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-3); }
+.meeting-head .grow { min-width: 0; }
+.meeting-off {
+  display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap;
+  padding: var(--s-3) var(--s-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-lg);
+  font-size: var(--fs-sm); color: var(--text-muted);
+}
+
 .live-focus { width: 100%; max-width: 760px; margin-inline: auto; display: flex; flex-direction: column; gap: var(--s-5); }
 .live-focus .live-stage { min-height: 320px; }
 .lq-kicker { font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--text); }

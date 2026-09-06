@@ -72,6 +72,8 @@ export function LiveSessionProvider({ role, children }: { role: 'STUDENT' | 'TEA
       setReactions((r) => (p.kind === 'confused'
         ? { ...r, confused: r.confused + 1 }
         : { ...r, gotIt: r.gotIt + 1 })),
+    'meeting:updated': (p: { meetingOpen: boolean }) =>
+      setSession((s) => (s ? { ...s, meetingOpen: p.meetingOpen } : s)),
   });
 
   // Surface the socket's health while in a session, so the pages can say

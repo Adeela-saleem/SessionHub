@@ -7,12 +7,14 @@ import { QaPanel } from '../../features/session/QaPanel';
 import { TeacherPollPanel } from '../../features/session/PollPanel';
 import { ConnectionStrip } from '../../features/session/ConnectionStrip';
 import { LiveBar } from '../../features/session/LiveBar';
+import { MeetingPanel, meetingRoomName } from '../../features/session/MeetingPanel';
+import { useAuth } from '../../lib/auth';
 import {
   Badge, Banner, Button, ConfirmDialog, EmptyState, LinkButton, PageHeader, Progress,
   SectionHead, SelectField, SimpleTable, Skeleton, TextField, useToast,
 } from '../../components/ui';
 import {
-  IconArrowRight, IconChart, IconCheck, IconHelp, IconPlay, IconSparkle, IconStop,
+  IconArrowRight, IconBroadcast, IconChart, IconCheck, IconHelp, IconPlay, IconSparkle, IconStop,
 } from '../../components/icons';
 import { formatDayDate } from '../../lib/format';
 
@@ -27,6 +29,7 @@ type SessionRecord = ClassSession & { startedAt?: string | null; createdAt?: str
 export default function TeacherLiveControl() {
   const qc = useQueryClient();
   const toast = useToast();
+  const { user } = useAuth();
   const {
     session, adopt, leave, attendees, answered, results, setResults, connected, reactions,
   } = useLiveSession();
@@ -68,6 +71,18 @@ export default function TeacherLiveControl() {
     onSuccess: (r) => { setResults(r); void questions.refetch(); },
     onError: () => toast.error('Could not close that question'),
   });
+
+  // The flag comes back over the socket ('meeting:updated'), which is what
+  // flips the panel for everyone, this screen included.
+  const setMeeting = useMutation({
+    mutationFn: (open: boolean) => api.post(`/sessions/${session!.id}/meeting`, { open }),
+    onSuccess: (_, open) => {
+      if (open) toast.success('Meeting started', 'Students in the room are joining now.');
+      else toast.info('Meeting ended');
+    },
+    onError: (e) => toast.error('Could not update the meeting', e instanceof ApiError ? e.message : 'Try again.'),
+  });
+  const meetingOpen = !!session?.meetingOpen;
 
   const list = questions.data ?? [];
   const openQ = list.find((q) => q.state === 'OPEN');
@@ -213,6 +228,10 @@ export default function TeacherLiveControl() {
         ]}
         actions={
           <>
+            <Button variant={meetingOpen ? 'secondary' : 'primary'} size="sm"
+              loading={setMeeting.isPending} onClick={() => setMeeting.mutate(!meetingOpen)}>
+              <IconBroadcast size={14} />{meetingOpen ? 'End meeting' : 'Start meeting'}
+            </Button>
             <LinkButton to="/teacher/studio" variant="secondary" size="sm">
               <IconSparkle size={14} />Add questions
             </LinkButton>
@@ -227,6 +246,34 @@ export default function TeacherLiveControl() {
 
       <div className="live-layout">
         <div className="live-main">
+          {/* ── Video meeting ─────────────────────────────── */}
+          {meetingOpen ? (
+            <section style={{ marginBottom: 'var(--s-5)' }}>
+              <div className="meeting-head">
+                <Badge tone="live">Meeting</Badge>
+                <span className="t-sm t-muted grow t-clamp-1">
+                  Students in the room see this call. If Jitsi asks you to log in, that makes you the moderator.
+                </span>
+                <Button size="xs" variant="secondary" loading={setMeeting.isPending} onClick={() => setMeeting.mutate(false)}>
+                  End meeting
+                </Button>
+              </div>
+              <MeetingPanel
+                roomName={meetingRoomName(session)}
+                displayName={user?.name ?? 'Teacher'}
+                email={user?.email}
+                subject={session.title ?? session.course?.name}
+                onLeft={() => setMeeting.mutate(false)}
+              />
+            </section>
+          ) : (
+            <div className="meeting-off" style={{ marginBottom: 'var(--s-5)' }}>
+              <IconBroadcast size={15} />
+              <span className="grow">No video meeting running. Start one and every student in the room joins automatically.</span>
+              <Button size="xs" loading={setMeeting.isPending} onClick={() => setMeeting.mutate(true)}>Start meeting</Button>
+            </div>
+          )}
+
           {/* ── Stage ─────────────────────────────────────── */}
           <section className={`live-stage ${openQ ? 'is-open' : results ? 'is-result' : ''}`.trim()} aria-live="polite">
             {questions.isLoading ? (

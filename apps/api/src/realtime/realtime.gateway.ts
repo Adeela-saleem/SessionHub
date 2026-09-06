@@ -9,7 +9,14 @@ import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface SocketUser { id: string; role: string; name: string; }
-type AuthedSocket = Socket & { data: { user?: SocketUser; lastReactionAt?: number } };
+type AuthedSocket = Socket & {
+  data: {
+    user?: SocketUser;
+    /** Resolves once the handshake token has been checked, so handlers can wait for it. */
+    ready?: Promise<void>;
+    lastReactionAt?: number;
+  };
+};
 
 const REACTION_KINDS = ['confused', 'got-it'] as const;
 type ReactionKind = (typeof REACTION_KINDS)[number];
@@ -35,8 +42,17 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
    * The socket is authenticated once, at connect, and the identity is
    * pinned to socket.data — later events never carry a client-supplied
    * user id, so a connected client cannot act as somebody else.
+   *
+   * Nest does not wait for this before dispatching events, and clients
+   * subscribe the instant they connect, so the check is exposed as a
+   * promise the handlers await. Without it the first subscribe after a
+   * connect was refused whenever the token lookup lost the race.
    */
-  async handleConnection(client: AuthedSocket) {
+  handleConnection(client: AuthedSocket) {
+    client.data.ready = this.authenticate(client);
+  }
+
+  private async authenticate(client: AuthedSocket) {
     try {
       const token =
         client.handshake.auth?.token ??
@@ -82,6 +98,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     @ConnectedSocket() client: AuthedSocket,
     @MessageBody() body: { sessionId: string },
   ) {
+    await client.data.ready;
     const user = client.data.user;
     if (!user || !body?.sessionId) return { ok: false };
 
@@ -118,10 +135,11 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
    * all. Costing a student nothing to admit confusion is the point.
    */
   @SubscribeMessage('session:react')
-  react(
+  async react(
     @ConnectedSocket() client: AuthedSocket,
     @MessageBody() body: { sessionId: string; kind: ReactionKind },
   ) {
+    await client.data.ready;
     const user = client.data.user;
     if (!user || user.role !== 'STUDENT') return { ok: false };
     if (!body?.sessionId || !REACTION_KINDS.includes(body.kind)) return { ok: false };

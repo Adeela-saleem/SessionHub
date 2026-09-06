@@ -8,6 +8,8 @@ import { QaPanel } from '../../features/session/QaPanel';
 import { StudentPollPanel } from '../../features/session/PollPanel';
 import { ConnectionStrip } from '../../features/session/ConnectionStrip';
 import { LiveBar } from '../../features/session/LiveBar';
+import { MeetingPanel, meetingRoomName } from '../../features/session/MeetingPanel';
+import { useAuth } from '../../lib/auth';
 import {
   Badge, Banner, Button, ConfirmDialog, EmptyState, Field, Input, PageHeader, SectionHead,
   useToast,
@@ -53,6 +55,7 @@ export default function StudentLiveSession() {
     session, question, results, attendees, connected, join, leave, myAnswerFor, recordAnswer,
   } = useLiveSession();
   const toast = useToast();
+  const { user } = useAuth();
 
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -96,6 +99,22 @@ export default function StudentLiveSession() {
         <ConnectionStrip connected={connected} />
 
         <div className="live-focus">
+          {session.meetingOpen && (
+            <section>
+              <div className="meeting-head">
+                <Badge tone="live">Meeting</Badge>
+                <span className="t-sm t-muted grow">Your teacher is live on video. You join muted; unmute to speak.</span>
+              </div>
+              <MeetingPanel
+                roomName={meetingRoomName(session)}
+                displayName={user?.name ?? 'Student'}
+                email={user?.email}
+                subject={session.title ?? session.course?.name}
+                muted
+              />
+            </section>
+          )}
+
           <section className={`live-stage ${question && !results ? 'is-open' : results ? 'is-result' : ''}`.trim()}>
             <LiveQuestion
               question={question}

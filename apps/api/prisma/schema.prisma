@@ -184,6 +184,9 @@ model ClassSession {
   endedAt   DateTime?
   // Heartbeat: a session whose teacher has gone silent is auto-closed.
   lastTeacherPingAt DateTime?
+  // Video meeting (Jitsi) the teacher has started for this session. The
+  // room name is derived from the session, so only the flag is stored.
+  meetingOpen Boolean     @default(false)
   createdAt DateTime      @default(now())
 
   questions  Question[]

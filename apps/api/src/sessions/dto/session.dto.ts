@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUUID, Length, MaxLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUUID, Length, MaxLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateSessionDto {
@@ -13,4 +13,9 @@ export class JoinSessionDto {
   @IsString()
   @Length(6, 6, { message: 'A room code is exactly 6 characters' })
   roomCode!: string;
+}
+
+export class SetMeetingDto {
+  @ApiProperty({ description: 'true starts the video meeting for the room, false ends it' })
+  @IsBoolean() open!: boolean;
 }

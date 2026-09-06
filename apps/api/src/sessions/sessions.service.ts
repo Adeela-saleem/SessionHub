@@ -7,6 +7,7 @@ import { Prisma, SessionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../common/decorators/current-user.decorator';
 import { NotificationsService } from '../notifications/notifications.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { generateRoomCode } from './room-code';
 
 /** A session whose teacher has not pinged for this long is auto-closed. */
@@ -16,7 +17,11 @@ const TEACHER_SILENCE_TIMEOUT_MS = 30 * 60_000;
 export class SessionsService {
   private readonly logger = new Logger(SessionsService.name);
 
-  constructor(private prisma: PrismaService, private notifications: NotificationsService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+    private realtime: RealtimeGateway,
+  ) {}
 
   // ── Creation ────────────────────────────────────────────────
   async create(user: AuthUser, courseId: string, title?: string) {
@@ -151,10 +156,32 @@ export class SessionsService {
 
   async close(user: AuthUser, sessionId: string) {
     await this.assertOwner(user, sessionId);
-    return this.prisma.classSession.update({
+    const closed = await this.prisma.classSession.update({
       where: { id: sessionId },
-      data: { status: SessionStatus.CLOSED, endedAt: new Date() },
+      data: { status: SessionStatus.CLOSED, endedAt: new Date(), meetingOpen: false },
     });
+    // Anyone still in the video room is told it is over.
+    this.realtime.emitToSession(sessionId, 'meeting:updated', { meetingOpen: false });
+    return closed;
+  }
+
+  /**
+   * The video meeting is a flag, not a resource: the Jitsi room name is
+   * derived from the session on the client, so starting a meeting only
+   * tells everyone in the room to load it.
+   */
+  async setMeeting(user: AuthUser, sessionId: string, open: boolean) {
+    const session = await this.assertOwner(user, sessionId);
+    if (open && session.status !== SessionStatus.LIVE) {
+      throw new BadRequestException('The session is not live');
+    }
+    const updated = await this.prisma.classSession.update({
+      where: { id: sessionId },
+      data: { meetingOpen: open },
+      select: { id: true, meetingOpen: true },
+    });
+    this.realtime.emitToSession(sessionId, 'meeting:updated', { meetingOpen: updated.meetingOpen });
+    return updated;
   }
 
   /**

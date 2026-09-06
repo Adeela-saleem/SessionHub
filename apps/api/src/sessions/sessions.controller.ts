@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/commo
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { SessionsService } from './sessions.service';
-import { CreateSessionDto, JoinSessionDto } from './dto/session.dto';
+import { CreateSessionDto, JoinSessionDto, SetMeetingDto } from './dto/session.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { AuthUser, CurrentUser } from '../common/decorators/current-user.decorator';
 
@@ -44,6 +44,12 @@ export class SessionsController {
   @Post(':id/heartbeat')
   heartbeat(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.sessions.heartbeat(user, id);
+  }
+
+  @Roles(Role.TEACHER, Role.ADMIN)
+  @Post(':id/meeting')
+  meeting(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body() dto: SetMeetingDto) {
+    return this.sessions.setMeeting(user, id, dto.open);
   }
 
   @Roles(Role.TEACHER, Role.ADMIN)

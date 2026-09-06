@@ -60,6 +60,10 @@ A live session is seeded on course **CS-204** with room code **`DBMS7K`**.
 3. In another browser, sign in as `ada@sessionhub.edu` → **Join session** → enter `DBMS7K`.
 4. The question appears with a synchronised countdown. Answer it.
 5. Back on the teacher screen, close the question — both sides see the distribution.
+6. Press **Start meeting** on the teacher screen: a Jitsi video call opens in the
+   page and every student in the room joins it automatically, muted. It runs on
+   the public `meet.jit.si` service, so there is nothing to configure; Jitsi may
+   ask the first person in (the teacher) to sign in to become moderator.
 
 ---
 

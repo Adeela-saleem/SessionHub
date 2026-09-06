@@ -26,6 +26,8 @@ export interface ClassSession {
   id: string; roomCode: string; title?: string | null;
   status: SessionStatus; courseId: string;
   startedAt?: string | null;
+  /** A Jitsi video meeting is running for this room. */
+  meetingOpen?: boolean;
   course?: { code: string; name: string };
   _count?: { attendance: number; questions: number };
 }
